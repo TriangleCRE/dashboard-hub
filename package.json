@@ -1,0 +1,14 @@
+{
+  "name": "dashboard-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Triangle Investment Group internal dashboard hub, behind a shared-passcode login gate.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
