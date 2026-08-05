@@ -39,6 +39,16 @@ function query(text, params) {
 // someone's since made to them.
 const SEED_DASHBOARDS = [
   {
+    seedKey: "how-to-create-a-claude-dashboard",
+    name: "How to Create a Claude Dashboard",
+    description: "Step-by-step guide for building your own dashboard and adding it to this hub.",
+    url: "https://dashboard-guide.vercel.app/",
+    lastUpdated: "Aug 5, 2026",
+    note: "Site password: 2903",
+    walkthrough: "",
+    pinned: true,
+  },
+  {
     seedKey: "quarterly-property-reports",
     name: "Quarterly Property Reports",
     description: "Quarterly performance reports across the property portfolio.",
@@ -114,9 +124,16 @@ function ensureSchema() {
           walkthrough TEXT NOT NULL DEFAULT '',
           last_updated TEXT NOT NULL DEFAULT '',
           sort_order INTEGER NOT NULL DEFAULT 0,
+          pinned BOOLEAN NOT NULL DEFAULT false,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
+      `);
+      // Older deployments created this table before the `pinned` column
+      // existed — add it on cold start if it's missing rather than
+      // requiring a manual migration.
+      await query(`
+        ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT false;
       `);
       await query(`
         CREATE INDEX IF NOT EXISTS dashboards_sort_order_idx ON dashboards (sort_order, id);
@@ -125,10 +142,10 @@ function ensureSchema() {
       for (let i = 0; i < SEED_DASHBOARDS.length; i++) {
         const s = SEED_DASHBOARDS[i];
         await query(
-          `INSERT INTO dashboards (seed_key, name, url, description, note, walkthrough, last_updated, sort_order)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          `INSERT INTO dashboards (seed_key, name, url, description, note, walkthrough, last_updated, sort_order, pinned)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
            ON CONFLICT (seed_key) DO NOTHING`,
-          [s.seedKey, s.name, s.url, s.description, s.note, s.walkthrough, s.lastUpdated, i]
+          [s.seedKey, s.name, s.url, s.description, s.note, s.walkthrough, s.lastUpdated, i, Boolean(s.pinned)]
         );
       }
     })().catch((err) => {
@@ -150,13 +167,17 @@ function rowToDashboard(row) {
     note: row.note,
     walkthrough: row.walkthrough,
     lastUpdated: row.last_updated,
+    pinned: row.pinned,
   };
 }
 
 async function listDashboards() {
   await ensureSchema();
+  // Pinned dashboards (currently just the "how to add a dashboard" guide)
+  // always lead the list, regardless of sort_order, so they stay top-left
+  // in the grid no matter how many other dashboards get added.
   const { rows } = await query(
-    `SELECT * FROM dashboards ORDER BY sort_order ASC, id ASC`
+    `SELECT * FROM dashboards ORDER BY pinned DESC, sort_order ASC, id ASC`
   );
   return rows.map(rowToDashboard);
 }
