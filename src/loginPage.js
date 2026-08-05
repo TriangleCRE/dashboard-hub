@@ -45,7 +45,7 @@ function renderLoginPage({ error } = {}) {
     box-shadow:var(--shadow);
     padding:34px 30px 30px;text-align:center;
   }
-  .gate-card .logo{width:220px;max-width:100%;height:auto;margin:0 auto 14px;display:block}
+  .gate-card .logo{width:240px;max-width:100%;height:auto;margin:0 auto 14px;display:block}
   .gate-card h1{
     position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
     clip:rect(0,0,0,0);white-space:nowrap;border:0;
@@ -69,13 +69,11 @@ function renderLoginPage({ error } = {}) {
   <div id="gate">
     <form class="gate-card" method="POST" action="/login">
       <h1>Triangle Investment Group</h1>
-      <svg class="logo" viewBox="0 0 400 120" role="img" aria-labelledby="logoTitle" xmlns="http://www.w3.org/2000/svg">
+      <svg class="logo" viewBox="0 0 300 70" role="img" aria-labelledby="logoTitle" xmlns="http://www.w3.org/2000/svg">
         <title id="logoTitle">Triangle Investment Group</title>
-        <polygon points="0,15 0,46 50,46" fill="#33a63f" />
-        <polygon points="0,105 0,62 50,62" fill="#33a63f" />
-        <rect x="0" y="58" width="400" height="4" fill="#2b2f33" />
-        <text x="70" y="50" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="34" font-weight="800" letter-spacing="1" fill="#2b2f33">TRIANGLE</text>
-        <text x="70" y="90" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="500" letter-spacing="3" fill="#565b60">INVESTEMENT GROUP</text>
+        <polygon points="26,8 26,42 4,42" fill="#33a63f" />
+        <text x="38" y="38" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="28" font-weight="800" letter-spacing="0.5" fill="#1f2430">TRIANGLE</text>
+        <text x="4" y="60" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12.5" font-weight="600" letter-spacing="2" fill="#6b7280">INVESTMENT GROUP</text>
       </svg>
       <p class="sub">Dashboard Hub — enter passcode to continue</p>
       <input name="passcode" type="password" inputmode="numeric" placeholder="Passcode" autocomplete="off" autofocus />
