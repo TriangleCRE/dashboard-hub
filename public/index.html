@@ -60,6 +60,25 @@
     box-shadow:0 6px 18px rgba(51,166,63,.45), 0 2px 5px rgba(0,0,0,.10);
     transform:translateY(-1px);
   }
+  .toolbar{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    gap:12px;margin:0 2px 18px;
+  }
+  .search-wrap{flex:1 1 220px;min-width:200px}
+  #searchInput{
+    width:100%;font-family:inherit;font-size:14px;color:var(--ink);
+    border:1.5px solid var(--line);border-radius:9px;padding:9px 12px;
+    background:#fff;
+  }
+  #searchInput:focus{outline:none;border-color:var(--green)}
+  .toolbar-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+  .toolbar-label{font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+  .toolbar-controls select{
+    font-family:inherit;font-size:13.5px;color:var(--ink);
+    border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;
+    background:#fff;cursor:pointer;
+  }
+  .toolbar-controls select:focus{outline:none;border-color:var(--green)}
   .grid{
     display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;
   }
@@ -203,6 +222,27 @@
         <div class="section-label">Dashboards</div>
         <button type="button" class="btn btn-add" id="openAddDashboard">+ Add Dashboard</button>
       </div>
+      <div class="toolbar">
+        <div class="search-wrap">
+          <input type="search" id="searchInput" placeholder="Search dashboards…" aria-label="Search dashboards" />
+        </div>
+        <div class="toolbar-controls">
+          <label class="toolbar-label" for="sortSelect">Sort</label>
+          <select id="sortSelect" aria-label="Sort dashboards">
+            <option value="pinned">Pinned first</option>
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="name-desc">Name (Z–A)</option>
+            <option value="updated-desc">Last updated (newest)</option>
+            <option value="updated-asc">Last updated (oldest)</option>
+          </select>
+          <label class="toolbar-label" for="filterSelect">Show</label>
+          <select id="filterSelect" aria-label="Filter dashboards">
+            <option value="all">All dashboards</option>
+            <option value="pinned">Pinned only</option>
+            <option value="walkthrough">Has walkthrough</option>
+          </select>
+        </div>
+      </div>
       <div class="grid" id="grid"></div>
     </main>
 
@@ -313,6 +353,83 @@
     grid.innerHTML = `<p class="grid-message">${esc(text)}</p>`;
   }
 
+  /* =========================================================================
+     SEARCH / SORT / FILTER
+     -------------------------------------------------------------------------
+     Purely client-side over whatever the API last returned — `allSites` is
+     the untouched list, everything below derives a view of it. Re-run on
+     every keystroke/select change; no need to re-fetch just to re-order or
+     narrow what's already in memory.
+     ========================================================================= */
+  let allSites = [];
+  const searchInput = document.getElementById("searchInput");
+  const sortSelect = document.getElementById("sortSelect");
+  const filterSelect = document.getElementById("filterSelect");
+
+  function matchesSearch(site, query){
+    if (!query) return true;
+    const haystack = [site.name, site.desc, site.note].filter(Boolean).join(" \n ").toLowerCase();
+    return haystack.includes(query);
+  }
+
+  function filterSites(sites){
+    const query = searchInput.value.trim().toLowerCase();
+    const filter = filterSelect.value;
+    return sites.filter(s => {
+      if (filter === "pinned" && !s.pinned) return false;
+      if (filter === "walkthrough" && !s.walkthrough) return false;
+      return matchesSearch(s, query);
+    });
+  }
+
+  // Best-effort: freeform "last updated" text (e.g. "Aug 5, 2026") parsed as
+  // a date when possible. Unparseable/empty values sort to the bottom of
+  // "newest first" and the top of "oldest first" either way, rather than
+  // throwing off the rest of the ordering.
+  function updatedTime(site){
+    if (!site.lastUpdated) return -Infinity;
+    const t = Date.parse(site.lastUpdated);
+    return isNaN(t) ? -Infinity : t;
+  }
+
+  function sortSites(sites){
+    const sorted = sites.slice();
+    const byNameAsc = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    switch (sortSelect.value) {
+      case "name-desc":
+        sorted.sort((a, b) => byNameAsc(b, a));
+        break;
+      case "updated-desc":
+        sorted.sort((a, b) => updatedTime(b) - updatedTime(a) || byNameAsc(a, b));
+        break;
+      case "updated-asc":
+        sorted.sort((a, b) => updatedTime(a) - updatedTime(b) || byNameAsc(a, b));
+        break;
+      case "pinned":
+        sorted.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || byNameAsc(a, b));
+        break;
+      case "name-asc":
+      default:
+        sorted.sort(byNameAsc);
+        break;
+    }
+    return sorted;
+  }
+
+  function applyFiltersAndRender(){
+    if (!allSites.length) return; // handled by the "no dashboards yet" message
+    const visible = sortSites(filterSites(allSites));
+    if (!visible.length) {
+      renderMessage("No dashboards match your search/filter.");
+      return;
+    }
+    renderCards(visible);
+  }
+
+  searchInput.addEventListener("input", applyFiltersAndRender);
+  sortSelect.addEventListener("change", applyFiltersAndRender);
+  filterSelect.addEventListener("change", applyFiltersAndRender);
+
   function renderCards(sites){
     grid.innerHTML = sites.map(s => {
       const meta = [];
@@ -356,11 +473,12 @@
     renderMessage("Loading dashboards…");
     try {
       const sites = await apiRequest(API_BASE);
+      allSites = sites;
       if (!sites.length) {
         renderMessage("No dashboards yet — use “+ Add Dashboard” to add the first one.");
         return;
       }
-      renderCards(sites);
+      applyFiltersAndRender();
     } catch (err) {
       grid.innerHTML = `<p class="grid-message">Couldn't load dashboards (${esc(err.message)}). <a href="javascript:void(0)" id="retryLoad">Retry</a></p>`;
       const retry = document.getElementById("retryLoad");
