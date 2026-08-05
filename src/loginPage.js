@@ -45,7 +45,11 @@ function renderLoginPage({ error } = {}) {
     box-shadow:var(--shadow);
     padding:34px 30px 30px;text-align:center;
   }
-  .gate-card h1{font-size:17px;margin:6px 0 2px;font-weight:700;letter-spacing:.2px}
+  .gate-card .logo{width:220px;max-width:100%;height:auto;margin:0 auto 14px;display:block}
+  .gate-card h1{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  }
   .gate-card p.sub{font-size:13px;color:var(--ink-soft);margin:0 0 20px}
   .gate-card input{
     width:100%;padding:13px 14px;font-size:16px;text-align:center;letter-spacing:3px;
@@ -65,6 +69,14 @@ function renderLoginPage({ error } = {}) {
   <div id="gate">
     <form class="gate-card" method="POST" action="/login">
       <h1>Triangle Investment Group</h1>
+      <svg class="logo" viewBox="0 0 400 120" role="img" aria-labelledby="logoTitle" xmlns="http://www.w3.org/2000/svg">
+        <title id="logoTitle">Triangle Investment Group</title>
+        <polygon points="0,15 0,60 55,60" fill="#33a63f" />
+        <polygon points="0,105 0,60 55,60" fill="#33a63f" />
+        <rect x="0" y="58" width="400" height="4" fill="#2b2f33" />
+        <text x="70" y="50" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="34" font-weight="800" letter-spacing="1" fill="#2b2f33">TRIANGLE</text>
+        <text x="70" y="90" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="500" letter-spacing="3" fill="#565b60">INVESTMENT GROUP</text>
+      </svg>
       <p class="sub">Dashboard Hub — enter passcode to continue</p>
       <input name="passcode" type="password" inputmode="numeric" placeholder="Passcode" autocomplete="off" autofocus />
       <button type="submit">Unlock</button>
