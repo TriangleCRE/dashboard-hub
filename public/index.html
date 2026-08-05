@@ -89,6 +89,10 @@
     display:inline-block;font-size:11px;font-weight:600;color:var(--green-dark);
     background:rgba(51,166,63,.12);border-radius:20px;padding:3px 10px;
   }
+  .note-text{
+    font-size:12.5px;color:var(--ink-soft);font-style:italic;
+    line-height:1.4;margin-bottom:14px;
+  }
   .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
   a.btn{
     display:inline-flex;align-items:center;gap:6px;text-decoration:none;
@@ -228,7 +232,11 @@
           <textarea id="fieldDesc" maxlength="200"></textarea>
         </div>
         <div class="field">
-          <label for="fieldNote">Note <span class="hint">(optional — e.g. a site password)</span></label>
+          <label for="fieldSitePassword">Site password <span class="hint">(optional)</span></label>
+          <input type="text" id="fieldSitePassword" maxlength="80" />
+        </div>
+        <div class="field">
+          <label for="fieldNote">Note <span class="hint">(optional)</span></label>
           <input type="text" id="fieldNote" maxlength="80" />
         </div>
         <div class="field">
@@ -310,7 +318,9 @@
       const meta = [];
       if (s.lastUpdated) meta.push(`<span><span class="k">Last updated:</span> ${esc(s.lastUpdated)}</span>`);
       const metaHtml = meta.length ? `<div class="meta">${meta.join("")}</div>` : "";
-      const pill = s.note ? `<div style="margin-bottom:14px"><span class="pill">${esc(s.note)}</span></div>` : "";
+      const pill = s.sitePassword
+        ? `<div style="margin-bottom:14px"><span class="pill">Site password: ${esc(s.sitePassword)}</span></div>` : "";
+      const noteText = s.note ? `<div class="note-text">${esc(s.note)}</div>` : "";
       const walk = s.walkthrough
         ? `<a class="btn btn-ghost" href="${esc(s.walkthrough)}" target="_blank" rel="noopener">▶ Walkthrough</a>` : "";
       const pinnedBadge = s.pinned ? `<span class="pinned-badge">★ Start here</span>` : "";
@@ -326,6 +336,7 @@
           <div class="desc">${esc(s.desc)}</div>
           ${metaHtml}
           ${pill}
+          ${noteText}
           <div class="actions">
             <a class="btn" href="${esc(s.url)}" target="_blank" rel="noopener">Open dashboard →</a>
             ${walk}
@@ -374,6 +385,7 @@
   const fieldUrl = document.getElementById("fieldUrl");
   const fieldLastUpdated = document.getElementById("fieldLastUpdated");
   const fieldDesc = document.getElementById("fieldDesc");
+  const fieldSitePassword = document.getElementById("fieldSitePassword");
   const fieldNote = document.getElementById("fieldNote");
   const fieldWalkthrough = document.getElementById("fieldWalkthrough");
 
@@ -425,6 +437,7 @@
     fieldUrl.value = site.url || "";
     fieldLastUpdated.value = site.lastUpdated || "";
     fieldDesc.value = site.desc || "";
+    fieldSitePassword.value = site.sitePassword || "";
     fieldNote.value = site.note || "";
     fieldWalkthrough.value = site.walkthrough || "";
     addModalTitle.textContent = "Edit Dashboard";
@@ -489,6 +502,7 @@
     const url = fieldUrl.value.trim();
     const lastUpdated = fieldLastUpdated.value.trim();
     const desc = fieldDesc.value.trim();
+    const sitePassword = fieldSitePassword.value.trim();
     const note = fieldNote.value.trim();
     const walkthrough = fieldWalkthrough.value.trim();
 
@@ -498,7 +512,7 @@
       return showModalError("The walkthrough link must be a valid URL, starting with http:// or https://");
     }
 
-    const record = { name, url, lastUpdated, desc, note, walkthrough };
+    const record = { name, url, lastUpdated, desc, sitePassword, note, walkthrough };
 
     submitAddDashboard.disabled = true;
     try {

@@ -44,7 +44,8 @@ const SEED_DASHBOARDS = [
     description: "Step-by-step guide for building your own dashboard and adding it to this hub.",
     url: "https://dashboard-guide.vercel.app/",
     lastUpdated: "Aug 5, 2026",
-    note: "Site password: 2903",
+    note: "",
+    sitePassword: "2903",
     walkthrough: "",
     pinned: true,
   },
@@ -54,7 +55,8 @@ const SEED_DASHBOARDS = [
     description: "Quarterly performance reports across the property portfolio.",
     url: "https://triangle-property-reports.vercel.app/",
     lastUpdated: "Jul 31, 2026",
-    note: "Site password: 2903",
+    note: "",
+    sitePassword: "2903",
     walkthrough: "",
   },
   {
@@ -64,6 +66,7 @@ const SEED_DASHBOARDS = [
     url: "https://triangle-deal-pipeline-tracker.vercel.app/",
     lastUpdated: "Aug 4, 2026",
     note: "",
+    sitePassword: "",
     walkthrough: "",
   },
   {
@@ -73,6 +76,7 @@ const SEED_DASHBOARDS = [
     url: "https://hoy-water-tool.vercel.app/",
     lastUpdated: "Jul 31, 2026",
     note: "",
+    sitePassword: "",
     walkthrough: "",
   },
   {
@@ -82,6 +86,7 @@ const SEED_DASHBOARDS = [
     url: "https://harbor-freight-billing-tool.vercel.app/",
     lastUpdated: "Jul 31, 2026",
     note: "",
+    sitePassword: "",
     walkthrough: "",
   },
   {
@@ -91,6 +96,7 @@ const SEED_DASHBOARDS = [
     url: "https://211-213-water-tracker.vercel.app/",
     lastUpdated: "Jul 2, 2026",
     note: "",
+    sitePassword: "",
     walkthrough: "https://www.loom.com/share/63547bf0c9954445af19ed6249d1b6d6",
   },
   {
@@ -100,6 +106,7 @@ const SEED_DASHBOARDS = [
     url: "https://triangle-loan-database.vercel.app/",
     lastUpdated: "Jul 7, 2026",
     note: "",
+    sitePassword: "",
     walkthrough: "",
   },
 ];
@@ -121,6 +128,7 @@ function ensureSchema() {
           url TEXT NOT NULL,
           description TEXT NOT NULL DEFAULT '',
           note TEXT NOT NULL DEFAULT '',
+          site_password TEXT NOT NULL DEFAULT '',
           walkthrough TEXT NOT NULL DEFAULT '',
           last_updated TEXT NOT NULL DEFAULT '',
           sort_order INTEGER NOT NULL DEFAULT 0,
@@ -129,11 +137,25 @@ function ensureSchema() {
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
       `);
-      // Older deployments created this table before the `pinned` column
-      // existed — add it on cold start if it's missing rather than
-      // requiring a manual migration.
+      // Older deployments created this table before the `pinned` /
+      // `site_password` columns existed — add them on cold start if
+      // they're missing rather than requiring a manual migration.
       await query(`
         ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT false;
+      `);
+      await query(`
+        ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS site_password TEXT NOT NULL DEFAULT '';
+      `);
+      // "Site password" used to just be a convention for the freeform Note
+      // field (e.g. note = "Site password: 2903"). Now that it's its own
+      // column, pull any note already written that way into site_password
+      // and clear it out of note. Only touches rows that still look like
+      // that convention, so it's a no-op once it's run.
+      await query(`
+        UPDATE dashboards
+        SET site_password = trim(substring(note from '(?i)^site password:?\\s*(.*)$')),
+            note = ''
+        WHERE site_password = '' AND note ~* '^site password:?\\s*\\S';
       `);
       await query(`
         CREATE INDEX IF NOT EXISTS dashboards_sort_order_idx ON dashboards (sort_order, id);
@@ -142,10 +164,10 @@ function ensureSchema() {
       for (let i = 0; i < SEED_DASHBOARDS.length; i++) {
         const s = SEED_DASHBOARDS[i];
         await query(
-          `INSERT INTO dashboards (seed_key, name, url, description, note, walkthrough, last_updated, sort_order, pinned)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          `INSERT INTO dashboards (seed_key, name, url, description, note, site_password, walkthrough, last_updated, sort_order, pinned)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
            ON CONFLICT (seed_key) DO NOTHING`,
-          [s.seedKey, s.name, s.url, s.description, s.note, s.walkthrough, s.lastUpdated, i, Boolean(s.pinned)]
+          [s.seedKey, s.name, s.url, s.description, s.note, s.sitePassword, s.walkthrough, s.lastUpdated, i, Boolean(s.pinned)]
         );
       }
     })().catch((err) => {
@@ -165,6 +187,7 @@ function rowToDashboard(row) {
     url: row.url,
     desc: row.description,
     note: row.note,
+    sitePassword: row.site_password,
     walkthrough: row.walkthrough,
     lastUpdated: row.last_updated,
     pinned: row.pinned,
@@ -189,10 +212,10 @@ async function createDashboard(fields) {
   );
   const nextOrder = orderRows[0].next_order;
   const { rows } = await query(
-    `INSERT INTO dashboards (name, url, description, note, walkthrough, last_updated, sort_order)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO dashboards (name, url, description, note, site_password, walkthrough, last_updated, sort_order)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
-    [fields.name, fields.url, fields.desc, fields.note, fields.walkthrough, fields.lastUpdated, nextOrder]
+    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, nextOrder]
   );
   return rowToDashboard(rows[0]);
 }
@@ -201,10 +224,10 @@ async function updateDashboard(id, fields) {
   await ensureSchema();
   const { rows } = await query(
     `UPDATE dashboards
-     SET name = $1, url = $2, description = $3, note = $4, walkthrough = $5, last_updated = $6, updated_at = now()
-     WHERE id = $7
+     SET name = $1, url = $2, description = $3, note = $4, site_password = $5, walkthrough = $6, last_updated = $7, updated_at = now()
+     WHERE id = $8
      RETURNING *`,
-    [fields.name, fields.url, fields.desc, fields.note, fields.walkthrough, fields.lastUpdated, id]
+    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, id]
   );
   return rows[0] ? rowToDashboard(rows[0]) : null;
 }
