@@ -26,6 +26,21 @@ single shared passcode.
   is defense-in-depth; the passcode is what actually keeps the site
   private.
 
+## Adding dashboards
+
+There are two ways to add a dashboard to the hub:
+
+- **"+ Add Dashboard" button** (in the app itself): any team member can add a
+  link without touching code. These are saved to that browser's
+  `localStorage`, so they persist across reloads on that device, but — since
+  there's no database behind this hub — they aren't automatically visible to
+  other people's browsers. Use this for a quick personal addition, or as a
+  way to draft the entry before someone adds it permanently below.
+- **Editing `SITES` in `public/index.html`**: for a dashboard everyone on the
+  team should see, add a `{ ... }` block to the `SITES` array (see the
+  comment above it in the file) and deploy. This is the only way to add a
+  dashboard for every visitor, since the hub has no backend storage.
+
 ## Local development
 
 ```bash
