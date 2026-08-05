@@ -75,7 +75,7 @@ function renderLoginPage({ error } = {}) {
         <polygon points="0,105 0,60 55,60" fill="#33a63f" />
         <rect x="0" y="58" width="400" height="4" fill="#2b2f33" />
         <text x="70" y="50" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="34" font-weight="800" letter-spacing="1" fill="#2b2f33">TRIANGLE</text>
-        <text x="70" y="90" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="500" letter-spacing="3" fill="#565b60">INVESTMENT GROUP</text>
+        <text x="70" y="90" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="500" letter-spacing="3" fill="#565b60">INVESTEMENT GROUP</text>
       </svg>
       <p class="sub">Dashboard Hub — enter passcode to continue</p>
       <input name="passcode" type="password" inputmode="numeric" placeholder="Passcode" autocomplete="off" autofocus />
