@@ -38,6 +38,7 @@ function parseDashboardBody(body) {
   const url = typeof body.url === "string" ? body.url.trim() : "";
   const desc = typeof body.desc === "string" ? body.desc.trim() : "";
   const note = typeof body.note === "string" ? body.note.trim() : "";
+  const sitePassword = typeof body.sitePassword === "string" ? body.sitePassword.trim() : "";
   const walkthrough = typeof body.walkthrough === "string" ? body.walkthrough.trim() : "";
   const lastUpdated = typeof body.lastUpdated === "string" ? body.lastUpdated.trim() : "";
 
@@ -47,13 +48,14 @@ function parseDashboardBody(body) {
   if (!isHttpUrl(url)) return { error: "URL must start with http:// or https://" };
   if (desc.length > 200) return { error: "Description must be 200 characters or fewer." };
   if (note.length > 80) return { error: "Note must be 80 characters or fewer." };
+  if (sitePassword.length > 80) return { error: "Site password must be 80 characters or fewer." };
   if (lastUpdated.length > 40) return { error: "Last updated must be 40 characters or fewer." };
   if (walkthrough) {
     if (walkthrough.length > 500) return { error: "Walkthrough link must be 500 characters or fewer." };
     if (!isHttpUrl(walkthrough)) return { error: "Walkthrough link must start with http:// or https://" };
   }
 
-  return { fields: { name, url, desc, note, walkthrough, lastUpdated } };
+  return { fields: { name, url, desc, note, sitePassword, walkthrough, lastUpdated } };
 }
 
 function createApp({ staticDir }) {
