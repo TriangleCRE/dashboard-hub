@@ -6,7 +6,7 @@ single shared passcode.
 ## How the login gate works
 
 - One passcode, stored in the `PASSCODE` environment variable. No user
-  accounts, no auth provider, no database.
+  accounts, no auth provider.
 - The whole app (dashboard page, login page, static assets) is served by a
   single Express app (`src/app.js`), deployed on Vercel as one serverless
   function (`api/index.js`, wired up via `vercel.json`) so every route is
@@ -28,36 +28,40 @@ single shared passcode.
 
 ## Adding and editing dashboards
 
-There are two ways to add or edit a dashboard on the hub:
+Every dashboard on the hub — the ones it launched with and anything added
+since — is a row in a `dashboards` table in Postgres (Neon, attached to this
+Vercel project). There's no code to edit anymore:
 
-- **In the app itself**: the "+ Add Dashboard" button adds a new card, and
-  the pencil icon on any card (including the built-in ones) edits its name,
-  URL, last-updated date, description, note, and walkthrough link. Any team
-  member can do this without touching code. These changes are saved to that
-  browser's `localStorage`, so they persist across reloads on that device,
-  but — since there's no database behind this hub — they aren't
-  automatically visible to other people's browsers. Editing a built-in
-  dashboard this way doesn't change the code; it layers a local override on
-  top, and the edit modal shows a "Reset to default" option to undo it.
-  Use this for a quick personal addition/tweak, or to draft the change
-  before someone makes it permanent below.
-- **Editing `SITES` in `public/index.html`**: for an addition or edit
-  everyone on the team should see, add or change a `{ ... }` block in the
-  `SITES` array (see the comment above it in the file) and deploy. This is
-  the only way to change what every visitor sees, since the hub has no
-  backend storage. Each entry's `id` is what the in-app edit feature keys
-  its local overrides on — don't reuse or rename an existing one.
+- The **"+ Add Dashboard"** button adds a new card.
+- The **pencil icon** on any card edits its name, URL, last-updated date,
+  description, note, and walkthrough link.
+- The **Remove** button on a card deletes it.
+
+Any team member can do all three. Because they all go through the
+`/api/dashboards` endpoints (`src/app.js`) to the same database (`src/db.js`),
+a change one person makes shows up for everyone the next time they load the
+page — this isn't per-browser storage.
+
+The app creates the `dashboards` table itself, and seeds it with the
+original dashboards, the first time it handles a request against a fresh
+database — no manual migration step required, in local dev or in
+production.
 
 ## Local development
 
 ```bash
 npm install
-PASSCODE=your-local-passcode npm run dev
+PASSCODE=your-local-passcode POSTGRES_URL=postgres://user:pass@localhost:5432/dashboard_hub npm run dev
 ```
+
+`POSTGRES_URL` can point at any reachable Postgres — a local instance, a
+Neon branch, whatever's convenient. The table and seed data are created
+automatically on first request.
 
 Then visit `http://localhost:3000`.
 
 ## Deploying
 
 Set `PASSCODE` in the Vercel project's Environment Variables (Project
-Settings → Environment Variables) — that's the only env var this app needs.
+Settings → Environment Variables). `POSTGRES_URL` is set automatically by
+the Neon integration under Storage — nothing to configure there by hand.

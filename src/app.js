@@ -15,15 +15,52 @@ const {
 const { parseCookies, buildSessionSetCookie } = require("./cookies");
 const { renderLoginPage } = require("./loginPage");
 const { ROBOTS_TXT } = require("./robotsTxt");
+const dashboards = require("./db");
 
 // Paths reachable with no session at all.
 const LOGIN_PATH = "/login";
 const ROBOTS_PATH = "/robots.txt";
 
+function isHttpUrl(value) {
+  try {
+    const u = new URL(value);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch (e) {
+    return false;
+  }
+}
+
+// Validates/normalizes a dashboard add/edit request body. Mirrors the
+// client-side checks in public/index.html — this is the version that
+// actually matters, since the client can't be trusted.
+function parseDashboardBody(body) {
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const url = typeof body.url === "string" ? body.url.trim() : "";
+  const desc = typeof body.desc === "string" ? body.desc.trim() : "";
+  const note = typeof body.note === "string" ? body.note.trim() : "";
+  const walkthrough = typeof body.walkthrough === "string" ? body.walkthrough.trim() : "";
+  const lastUpdated = typeof body.lastUpdated === "string" ? body.lastUpdated.trim() : "";
+
+  if (!name || !url) return { error: "Name and URL are required." };
+  if (name.length > 80) return { error: "Name must be 80 characters or fewer." };
+  if (url.length > 500) return { error: "URL must be 500 characters or fewer." };
+  if (!isHttpUrl(url)) return { error: "URL must start with http:// or https://" };
+  if (desc.length > 200) return { error: "Description must be 200 characters or fewer." };
+  if (note.length > 80) return { error: "Note must be 80 characters or fewer." };
+  if (lastUpdated.length > 40) return { error: "Last updated must be 40 characters or fewer." };
+  if (walkthrough) {
+    if (walkthrough.length > 500) return { error: "Walkthrough link must be 500 characters or fewer." };
+    if (!isHttpUrl(walkthrough)) return { error: "Walkthrough link must start with http:// or https://" };
+  }
+
+  return { fields: { name, url, desc, note, walkthrough, lastUpdated } };
+}
+
 function createApp({ staticDir }) {
   const app = express();
   app.disable("x-powered-by");
   app.use(express.urlencoded({ extended: false }));
+  app.use(express.json());
 
   // Unconditional, before any auth check: tell crawlers (and AI scrapers)
   // to stay away, on every single response including the login page and
@@ -75,6 +112,61 @@ function createApp({ staticDir }) {
   });
 
   // Everything past this point is authenticated.
+
+  // The dashboards API backs the "Add Dashboard" button and the pencil-icon
+  // edit UI (see public/index.html). Backed by one shared Postgres table
+  // (src/db.js) rather than per-browser storage, so everyone sees the same
+  // list.
+  app.get("/api/dashboards", async (req, res) => {
+    try {
+      const list = await dashboards.listDashboards();
+      res.json(list);
+    } catch (err) {
+      console.error("GET /api/dashboards failed:", err);
+      res.status(500).json({ error: "Could not load dashboards." });
+    }
+  });
+
+  app.post("/api/dashboards", async (req, res) => {
+    const { fields, error } = parseDashboardBody(req.body || {});
+    if (error) return res.status(400).json({ error });
+    try {
+      const created = await dashboards.createDashboard(fields);
+      res.status(201).json(created);
+    } catch (err) {
+      console.error("POST /api/dashboards failed:", err);
+      res.status(500).json({ error: "Could not add the dashboard." });
+    }
+  });
+
+  app.put("/api/dashboards/:id", async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid id." });
+    const { fields, error } = parseDashboardBody(req.body || {});
+    if (error) return res.status(400).json({ error });
+    try {
+      const updated = await dashboards.updateDashboard(id, fields);
+      if (!updated) return res.status(404).json({ error: "Dashboard not found." });
+      res.json(updated);
+    } catch (err) {
+      console.error("PUT /api/dashboards/:id failed:", err);
+      res.status(500).json({ error: "Could not save changes." });
+    }
+  });
+
+  app.delete("/api/dashboards/:id", async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid id." });
+    try {
+      const removed = await dashboards.deleteDashboard(id);
+      if (!removed) return res.status(404).json({ error: "Dashboard not found." });
+      res.status(204).end();
+    } catch (err) {
+      console.error("DELETE /api/dashboards/:id failed:", err);
+      res.status(500).json({ error: "Could not remove the dashboard." });
+    }
+  });
+
   app.use(express.static(staticDir, { extensions: ["html"] }));
 
   app.use((req, res) => {
