@@ -26,20 +26,27 @@ single shared passcode.
   is defense-in-depth; the passcode is what actually keeps the site
   private.
 
-## Adding dashboards
+## Adding and editing dashboards
 
-There are two ways to add a dashboard to the hub:
+There are two ways to add or edit a dashboard on the hub:
 
-- **"+ Add Dashboard" button** (in the app itself): any team member can add a
-  link without touching code. These are saved to that browser's
-  `localStorage`, so they persist across reloads on that device, but — since
-  there's no database behind this hub — they aren't automatically visible to
-  other people's browsers. Use this for a quick personal addition, or as a
-  way to draft the entry before someone adds it permanently below.
-- **Editing `SITES` in `public/index.html`**: for a dashboard everyone on the
-  team should see, add a `{ ... }` block to the `SITES` array (see the
-  comment above it in the file) and deploy. This is the only way to add a
-  dashboard for every visitor, since the hub has no backend storage.
+- **In the app itself**: the "+ Add Dashboard" button adds a new card, and
+  the pencil icon on any card (including the built-in ones) edits its name,
+  URL, last-updated date, description, note, and walkthrough link. Any team
+  member can do this without touching code. These changes are saved to that
+  browser's `localStorage`, so they persist across reloads on that device,
+  but — since there's no database behind this hub — they aren't
+  automatically visible to other people's browsers. Editing a built-in
+  dashboard this way doesn't change the code; it layers a local override on
+  top, and the edit modal shows a "Reset to default" option to undo it.
+  Use this for a quick personal addition/tweak, or to draft the change
+  before someone makes it permanent below.
+- **Editing `SITES` in `public/index.html`**: for an addition or edit
+  everyone on the team should see, add or change a `{ ... }` block in the
+  `SITES` array (see the comment above it in the file) and deploy. This is
+  the only way to change what every visitor sees, since the hub has no
+  backend storage. Each entry's `id` is what the in-app edit feature keys
+  its local overrides on — don't reuse or rename an existing one.
 
 ## Local development
 

@@ -48,6 +48,16 @@
   button.btn{
     font-family:inherit;cursor:pointer;border:none;
   }
+  .btn-add{
+    font-size:14.5px;padding:12px 20px;border-radius:10px;
+    box-shadow:0 4px 14px rgba(51,166,63,.35), 0 1px 3px rgba(0,0,0,.08);
+    transition:background .15s, box-shadow .15s, transform .15s;
+  }
+  .btn-add:hover{
+    background:var(--green-dark);
+    box-shadow:0 6px 18px rgba(51,166,63,.45), 0 2px 5px rgba(0,0,0,.10);
+    transform:translateY(-1px);
+  }
   .grid{
     display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;
   }
@@ -57,7 +67,9 @@
     transition:transform .12s ease, box-shadow .12s ease;
   }
   .card:hover{transform:translateY(-2px);box-shadow:0 2px 6px rgba(0,0,0,.08),0 14px 34px rgba(0,0,0,.10)}
-  .card .name{font-size:16.5px;font-weight:700;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+  .card-head-actions{display:flex;align-items:center;gap:8px;flex:none}
+  .card .name{font-size:16.5px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
   .card .name .dot{width:9px;height:9px;border-radius:50%;background:var(--green);flex:none}
   .card .desc{font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;flex:1}
   .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-soft);margin-bottom:16px}
@@ -83,12 +95,19 @@
   }
   footer .note{border-top:1px solid var(--line);padding-top:18px}
 
-  /* ---------- ADD DASHBOARD ---------- */
-  .card.custom{position:relative}
-  .badge-custom{
-    position:absolute;top:16px;right:16px;font-size:10.5px;font-weight:700;
+  /* ---------- ADD / EDIT DASHBOARD ---------- */
+  .badge-custom, .badge-edited{
+    font-size:10.5px;font-weight:700;white-space:nowrap;
     color:var(--ink-soft);background:#eef0f1;border-radius:20px;padding:3px 9px;
   }
+  .icon-btn{
+    display:flex;align-items:center;justify-content:center;
+    width:26px;height:26px;flex:none;border-radius:50%;
+    background:transparent;border:1.5px solid var(--line);color:var(--ink-soft);
+    font-size:13px;line-height:1;cursor:pointer;font-family:inherit;
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .icon-btn:hover{background:#f0f1f2;border-color:#d6d9db;color:var(--ink)}
   a.btn-remove{
     font-size:13px;font-weight:600;color:#b23b3b;background:transparent;
     border:none;padding:10px 4px;cursor:pointer;font-family:inherit;
@@ -128,8 +147,9 @@
   }
   .form-error.show{display:block}
   .modal-actions{
-    display:flex;justify-content:flex-end;gap:10px;margin-top:18px;
+    display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:18px;
   }
+  .modal-actions .btn-remove{margin-left:0;margin-right:auto;padding:10px 4px 10px 0}
 </style>
 </head>
 <body>
@@ -150,7 +170,7 @@
     <main>
       <div class="section-row">
         <div class="section-label">Dashboards</div>
-        <button type="button" class="btn" id="openAddDashboard">+ Add Dashboard</button>
+        <button type="button" class="btn btn-add" id="openAddDashboard">+ Add Dashboard</button>
       </div>
       <div class="grid" id="grid"></div>
     </main>
@@ -161,7 +181,7 @@
   <div class="modal-overlay" id="addModalOverlay" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
       <h2 id="addModalTitle">Add Dashboard</h2>
-      <p class="sub">Add a link to another Triangle Investment Group dashboard.</p>
+      <p class="sub" id="addModalSub">Add a link to another Triangle Investment Group dashboard.</p>
       <p class="form-error" id="addModalError"></p>
       <form id="addDashboardForm">
         <div class="field">
@@ -171,6 +191,10 @@
         <div class="field">
           <label for="fieldUrl">URL</label>
           <input type="text" id="fieldUrl" placeholder="https://" maxlength="500" required />
+        </div>
+        <div class="field">
+          <label for="fieldLastUpdated">Last updated <span class="hint">(optional — any format, e.g. "Aug 5, 2026")</span></label>
+          <input type="text" id="fieldLastUpdated" maxlength="40" />
         </div>
         <div class="field">
           <label for="fieldDesc">Description <span class="hint">(optional)</span></label>
@@ -185,8 +209,9 @@
           <input type="text" id="fieldWalkthrough" placeholder="https://" maxlength="500" />
         </div>
         <div class="modal-actions">
+          <button type="button" class="btn-remove" id="resetToDefault" hidden>Reset to default</button>
           <a class="btn btn-ghost" id="cancelAddDashboard" href="javascript:void(0)">Cancel</a>
-          <button type="submit" class="btn">Add Dashboard</button>
+          <button type="submit" class="btn" id="submitAddDashboard">Add Dashboard</button>
         </div>
       </form>
     </div>
@@ -198,10 +223,13 @@
      -------------------------------------------------------------------------
      To update a "Last updated" date, just change the lastUpdated value below.
      Use any format you like (e.g. "Jul 31, 2026"). Leave it "" to hide it.
-     To add a new dashboard later, copy one { ... } block and edit it.
+     To add a new dashboard later, copy one { ... } block and edit it — give
+     it a unique, unchanging "id" (used to remember edits made from the
+     pencil icon on its card; don't reuse or rename an existing id).
      ========================================================================= */
   const SITES = [
     {
+      id: "quarterly-property-reports",
       name: "Quarterly Property Reports",
       desc: "Quarterly performance reports across the property portfolio.",
       url: "https://triangle-property-reports.vercel.app/",
@@ -209,6 +237,7 @@
       note: "Site password: 2903"
     },
     {
+      id: "deal-pipeline",
       name: "Deal Pipeline",
       desc: "Tracker for deals moving through the acquisition pipeline.",
       url: "https://triangle-deal-pipeline-tracker.vercel.app/",
@@ -216,6 +245,7 @@
       note: ""
     },
     {
+      id: "hoy-billing-tool",
       name: "Hoy Billing Tool",
       desc: "Water billing tool for the Hoy property.",
       url: "https://hoy-water-tool.vercel.app/",
@@ -223,6 +253,7 @@
       note: ""
     },
     {
+      id: "harbor-freight-billing-tool",
       name: "Harbor Freight Billing Tool",
       desc: "Billing tool for the Harbor Freight tenant.",
       url: "https://harbor-freight-billing-tool.vercel.app/",
@@ -230,6 +261,7 @@
       note: ""
     },
     {
+      id: "211-213-n-lewis-billing-tool",
       name: "211/213 N Lewis Billing Tool",
       desc: "Water billing tracker for 211/213 N Lewis. Built by Oliver.",
       url: "https://211-213-water-tracker.vercel.app/",
@@ -238,6 +270,7 @@
       walkthrough: "https://www.loom.com/share/63547bf0c9954445af19ed6249d1b6d6"
     },
     {
+      id: "loan-database",
       name: "Loan Database",
       desc: "Loan database for Triangle Investment Group.",
       url: "https://triangle-loan-database.vercel.app/",
@@ -254,16 +287,19 @@
   function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
   /* =========================================================================
-     ADD DASHBOARD
+     ADD / EDIT DASHBOARD
      -------------------------------------------------------------------------
-     Team members can add a dashboard from the browser instead of editing
-     code. Added dashboards are stored in this browser's localStorage, so
-     they show up here on this device every time, but they aren't shared
-     with other people's browsers automatically (there's no backend/database
-     behind this hub). To make a dashboard visible to everyone, add it to
-     the SITES array above instead.
+     Team members can add a dashboard, or edit any dashboard's card (via the
+     pencil icon), from the browser instead of editing code. Both are stored
+     in this browser's localStorage — dashboards you add, and any edits to
+     the built-in dashboards above — so they show up here on this device
+     every time, but they aren't shared with other people's browsers
+     automatically (there's no backend/database behind this hub). To make a
+     dashboard or an edit visible to everyone, change the SITES array above
+     instead and deploy.
      ========================================================================= */
   const CUSTOM_SITES_KEY = "dashboardHub.customSites";
+  const BUILTIN_OVERRIDES_KEY = "dashboardHub.builtinOverrides";
 
   function loadCustomSites(){
     try {
@@ -280,7 +316,25 @@
       window.localStorage.setItem(CUSTOM_SITES_KEY, JSON.stringify(sites));
     } catch (e) {
       // localStorage unavailable (private browsing, quota, etc.) — the site
-      // still works, added dashboards just won't persist across reloads.
+      // still works, added/edited dashboards just won't persist across reloads.
+    }
+  }
+
+  function loadOverrides(){
+    try {
+      const raw = window.localStorage.getItem(BUILTIN_OVERRIDES_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveOverrides(overrides){
+    try {
+      window.localStorage.setItem(BUILTIN_OVERRIDES_KEY, JSON.stringify(overrides));
+    } catch (e) {
+      // see note in saveCustomSites()
     }
   }
 
@@ -293,25 +347,51 @@
     }
   }
 
+  function makeCustomId(){
+    return `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  // Built-in sites with any locally-saved edits applied, plus locally-added
+  // custom sites — each tagged with where it came from so the card and the
+  // edit/remove actions know how to save changes back.
+  function getEffectiveSites(){
+    const overrides = loadOverrides();
+    const builtins = SITES.map(s => ({
+      ...s,
+      ...(overrides[s.id] || {}),
+      _kind: "builtin",
+      _id: s.id,
+      _edited: Boolean(overrides[s.id])
+    }));
+    const customs = loadCustomSites().map(s => ({ ...s, _kind: "custom", _id: s.id }));
+    return builtins.concat(customs);
+  }
+
   function renderGrid(){
     const grid = document.getElementById("grid");
-    const customSites = loadCustomSites();
-    const allSites = SITES.concat(customSites);
-    grid.innerHTML = allSites.map((s, i) => {
+    const allSites = getEffectiveSites();
+    grid.innerHTML = allSites.map(s => {
       const meta = [];
       if (s.lastUpdated) meta.push(`<span><span class="k">Last updated:</span> ${esc(s.lastUpdated)}</span>`);
       const metaHtml = meta.length ? `<div class="meta">${meta.join("")}</div>` : "";
       const pill = s.note ? `<div style="margin-bottom:14px"><span class="pill">${esc(s.note)}</span></div>` : "";
       const walk = s.walkthrough
         ? `<a class="btn btn-ghost" href="${esc(s.walkthrough)}" target="_blank" rel="noopener">▶ Walkthrough</a>` : "";
-      const isCustom = i >= SITES.length;
-      const badge = isCustom ? `<span class="badge-custom">Added by you</span>` : "";
+      const isCustom = s._kind === "custom";
+      const badge = isCustom
+        ? `<span class="badge-custom">Added by you</span>`
+        : (s._edited ? `<span class="badge-edited">Edited by you</span>` : "");
       const removeBtn = isCustom
-        ? `<button type="button" class="btn-remove" data-custom-index="${i - SITES.length}">Remove</button>` : "";
+        ? `<button type="button" class="btn-remove" data-remove-id="${esc(s._id)}">Remove</button>` : "";
       return `
         <div class="card${isCustom ? " custom" : ""}">
-          ${badge}
-          <div class="name"><span class="dot"></span>${esc(s.name)}</div>
+          <div class="card-head">
+            <div class="name"><span class="dot"></span>${esc(s.name)}</div>
+            <div class="card-head-actions">
+              ${badge}
+              <button type="button" class="icon-btn" data-edit-id="${esc(s._id)}" data-edit-kind="${s._kind}" title="Edit" aria-label="Edit ${esc(s.name)}">✎</button>
+            </div>
+          </div>
           <div class="desc">${esc(s.desc)}</div>
           ${metaHtml}
           ${pill}
@@ -323,32 +403,82 @@
         </div>`;
     }).join("");
 
-    grid.querySelectorAll("[data-custom-index]").forEach(btn => {
+    grid.querySelectorAll("[data-remove-id]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const idx = Number(btn.getAttribute("data-custom-index"));
-        const sites = loadCustomSites();
-        sites.splice(idx, 1);
+        const id = btn.getAttribute("data-remove-id");
+        const sites = loadCustomSites().filter(s => s.id !== id);
         saveCustomSites(sites);
         renderGrid();
       });
     });
+
+    grid.querySelectorAll("[data-edit-id]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-edit-id");
+        const kind = btn.getAttribute("data-edit-kind");
+        const site = getEffectiveSites().find(s => s._id === id && s._kind === kind);
+        if (site) openEditModal(site);
+      });
+    });
   }
 
-  // ---------- Add Dashboard modal ----------
+  // ---------- Add / Edit Dashboard modal ----------
   const addModalOverlay = document.getElementById("addModalOverlay");
+  const addModalTitle = document.getElementById("addModalTitle");
+  const addModalSub = document.getElementById("addModalSub");
   const addDashboardForm = document.getElementById("addDashboardForm");
   const addModalError = document.getElementById("addModalError");
+  const submitAddDashboard = document.getElementById("submitAddDashboard");
+  const resetToDefault = document.getElementById("resetToDefault");
 
-  function openAddModal(){
+  const fieldName = document.getElementById("fieldName");
+  const fieldUrl = document.getElementById("fieldUrl");
+  const fieldLastUpdated = document.getElementById("fieldLastUpdated");
+  const fieldDesc = document.getElementById("fieldDesc");
+  const fieldNote = document.getElementById("fieldNote");
+  const fieldWalkthrough = document.getElementById("fieldWalkthrough");
+
+  // null when adding a brand-new dashboard; otherwise { id, kind } of the
+  // dashboard currently being edited.
+  let editingSite = null;
+
+  function resetModalMessages(){
     addModalError.classList.remove("show");
     addModalError.textContent = "";
+  }
+
+  function openAddModal(){
+    editingSite = null;
+    resetModalMessages();
     addDashboardForm.reset();
+    addModalTitle.textContent = "Add Dashboard";
+    addModalSub.textContent = "Add a link to another Triangle Investment Group dashboard.";
+    submitAddDashboard.textContent = "Add Dashboard";
+    resetToDefault.hidden = true;
     addModalOverlay.hidden = false;
-    document.getElementById("fieldName").focus();
+    fieldName.focus();
+  }
+
+  function openEditModal(site){
+    editingSite = { id: site._id, kind: site._kind };
+    resetModalMessages();
+    fieldName.value = site.name || "";
+    fieldUrl.value = site.url || "";
+    fieldLastUpdated.value = site.lastUpdated || "";
+    fieldDesc.value = site.desc || "";
+    fieldNote.value = site.note || "";
+    fieldWalkthrough.value = site.walkthrough || "";
+    addModalTitle.textContent = "Edit Dashboard";
+    addModalSub.textContent = "Update this dashboard's details.";
+    submitAddDashboard.textContent = "Save Changes";
+    resetToDefault.hidden = !(site._kind === "builtin" && site._edited);
+    addModalOverlay.hidden = false;
+    fieldName.focus();
   }
 
   function closeAddModal(){
     addModalOverlay.hidden = true;
+    editingSite = null;
   }
 
   document.getElementById("openAddDashboard").addEventListener("click", openAddModal);
@@ -362,14 +492,24 @@
     if (e.key === "Escape" && !addModalOverlay.hidden) closeAddModal();
   });
 
+  resetToDefault.addEventListener("click", () => {
+    if (!editingSite || editingSite.kind !== "builtin") return;
+    const overrides = loadOverrides();
+    delete overrides[editingSite.id];
+    saveOverrides(overrides);
+    closeAddModal();
+    renderGrid();
+  });
+
   addDashboardForm.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    const name = document.getElementById("fieldName").value.trim();
-    const url = document.getElementById("fieldUrl").value.trim();
-    const desc = document.getElementById("fieldDesc").value.trim();
-    const note = document.getElementById("fieldNote").value.trim();
-    const walkthrough = document.getElementById("fieldWalkthrough").value.trim();
+    const name = fieldName.value.trim();
+    const url = fieldUrl.value.trim();
+    const lastUpdated = fieldLastUpdated.value.trim();
+    const desc = fieldDesc.value.trim();
+    const note = fieldNote.value.trim();
+    const walkthrough = fieldWalkthrough.value.trim();
 
     if (!name || !url) {
       addModalError.textContent = "Name and URL are required.";
@@ -387,16 +527,33 @@
       return;
     }
 
-    const sites = loadCustomSites();
-    sites.push({
+    const record = {
       name,
       url,
+      lastUpdated: lastUpdated || "",
       desc: desc || "",
-      lastUpdated: "",
       note: note || "",
       ...(walkthrough ? { walkthrough } : {})
-    });
-    saveCustomSites(sites);
+    };
+
+    if (!editingSite) {
+      // Adding a brand-new dashboard.
+      const sites = loadCustomSites();
+      sites.push({ id: makeCustomId(), ...record });
+      saveCustomSites(sites);
+    } else if (editingSite.kind === "custom") {
+      const sites = loadCustomSites();
+      const idx = sites.findIndex(s => s.id === editingSite.id);
+      if (idx !== -1) sites[idx] = { id: editingSite.id, ...record };
+      saveCustomSites(sites);
+    } else {
+      // Editing a built-in dashboard: remember the change as an override,
+      // keyed by the built-in's stable id, without touching SITES itself.
+      const overrides = loadOverrides();
+      overrides[editingSite.id] = record;
+      saveOverrides(overrides);
+    }
+
     closeAddModal();
     renderGrid();
   });
