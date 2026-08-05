@@ -145,6 +145,7 @@
   .modal-actions{
     display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:18px;
   }
+  .modal-actions .btn-remove{margin-left:0;margin-right:auto;padding:10px 4px 10px 0}
   .grid-message{
     color:var(--ink-soft);font-size:14px;padding:8px 2px;
   }
@@ -208,6 +209,7 @@
           <input type="text" id="fieldWalkthrough" placeholder="https://" maxlength="500" />
         </div>
         <div class="modal-actions">
+          <button type="button" class="btn-remove" id="deleteDashboard" hidden>Delete Dashboard</button>
           <a class="btn btn-ghost" id="cancelAddDashboard" href="javascript:void(0)">Cancel</a>
           <button type="submit" class="btn" id="submitAddDashboard">Add Dashboard</button>
         </div>
@@ -324,14 +326,21 @@
     }
   }
 
+  // Shared by the card's "Remove" button and the "Delete Dashboard" button
+  // inside the edit modal — same confirmation, same request either way.
+  async function confirmAndDelete(id, name){
+    if (!window.confirm(`Remove "${name}" from the hub for everyone? This can't be undone.`)) return false;
+    await apiRequest(`${API_BASE}/${id}`, { method: "DELETE" });
+    return true;
+  }
+
   async function handleRemove(btn){
     const id = btn.getAttribute("data-remove-id");
     const name = btn.getAttribute("data-remove-name");
-    if (!window.confirm(`Remove "${name}" from the hub for everyone? This can't be undone.`)) return;
     btn.disabled = true;
     try {
-      await apiRequest(`${API_BASE}/${id}`, { method: "DELETE" });
-      loadAndRender();
+      if (await confirmAndDelete(id, name)) loadAndRender();
+      else btn.disabled = false;
     } catch (err) {
       window.alert(`Couldn't remove this dashboard: ${err.message}`);
       btn.disabled = false;
@@ -345,6 +354,7 @@
   const addDashboardForm = document.getElementById("addDashboardForm");
   const addModalError = document.getElementById("addModalError");
   const submitAddDashboard = document.getElementById("submitAddDashboard");
+  const deleteDashboardBtn = document.getElementById("deleteDashboard");
 
   const fieldName = document.getElementById("fieldName");
   const fieldUrl = document.getElementById("fieldUrl");
@@ -353,9 +363,11 @@
   const fieldNote = document.getElementById("fieldNote");
   const fieldWalkthrough = document.getElementById("fieldWalkthrough");
 
-  // null when adding a brand-new dashboard; otherwise the id of the
-  // dashboard currently being edited.
+  // null when adding a brand-new dashboard; otherwise the id/name of the
+  // dashboard currently being edited (name is just for the delete-confirm
+  // message).
   let editingId = null;
+  let editingName = "";
 
   function showModalError(message){
     addModalError.textContent = message;
@@ -369,17 +381,20 @@
 
   function openAddModal(){
     editingId = null;
+    editingName = "";
     resetModalMessages();
     addDashboardForm.reset();
     addModalTitle.textContent = "Add Dashboard";
     addModalSub.textContent = "Add a link to another Triangle Investment Group dashboard.";
     submitAddDashboard.textContent = "Add Dashboard";
+    deleteDashboardBtn.hidden = true;
     addModalOverlay.hidden = false;
     fieldName.focus();
   }
 
   function openEditModal(site){
     editingId = site.id;
+    editingName = site.name || "";
     resetModalMessages();
     fieldName.value = site.name || "";
     fieldUrl.value = site.url || "";
@@ -390,6 +405,7 @@
     addModalTitle.textContent = "Edit Dashboard";
     addModalSub.textContent = "Update this dashboard's details.";
     submitAddDashboard.textContent = "Save Changes";
+    deleteDashboardBtn.hidden = false;
     addModalOverlay.hidden = false;
     fieldName.focus();
   }
@@ -397,7 +413,23 @@
   function closeAddModal(){
     addModalOverlay.hidden = true;
     editingId = null;
+    editingName = "";
   }
+
+  deleteDashboardBtn.addEventListener("click", async () => {
+    if (editingId === null) return;
+    deleteDashboardBtn.disabled = true;
+    try {
+      if (await confirmAndDelete(editingId, editingName)) {
+        closeAddModal();
+        loadAndRender();
+      }
+    } catch (err) {
+      showModalError(`Couldn't delete this dashboard: ${err.message}`);
+    } finally {
+      deleteDashboardBtn.disabled = false;
+    }
+  });
 
   document.getElementById("openAddDashboard").addEventListener("click", openAddModal);
   document.getElementById("cancelAddDashboard").addEventListener("click", closeAddModal);
