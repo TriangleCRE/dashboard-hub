@@ -395,24 +395,29 @@
   function sortSites(sites){
     const sorted = sites.slice();
     const byNameAsc = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    // The chosen sort mode only decides order *within* the pinned group and
+    // *within* the rest — pinned dashboards always come first, no matter
+    // which mode is active. ("Pinned first" now just falls through to
+    // plain name order, since the pinned-first tiebreak below already does
+    // its job.)
+    let cmp;
     switch (sortSelect.value) {
       case "name-desc":
-        sorted.sort((a, b) => byNameAsc(b, a));
+        cmp = (a, b) => byNameAsc(b, a);
         break;
       case "updated-desc":
-        sorted.sort((a, b) => updatedTime(b) - updatedTime(a) || byNameAsc(a, b));
+        cmp = (a, b) => updatedTime(b) - updatedTime(a) || byNameAsc(a, b);
         break;
       case "updated-asc":
-        sorted.sort((a, b) => updatedTime(a) - updatedTime(b) || byNameAsc(a, b));
+        cmp = (a, b) => updatedTime(a) - updatedTime(b) || byNameAsc(a, b);
         break;
       case "pinned":
-        sorted.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || byNameAsc(a, b));
-        break;
       case "name-asc":
       default:
-        sorted.sort(byNameAsc);
+        cmp = byNameAsc;
         break;
     }
+    sorted.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || cmp(a, b));
     return sorted;
   }
 
