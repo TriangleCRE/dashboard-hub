@@ -229,7 +229,6 @@
         <div class="toolbar-controls">
           <label class="toolbar-label" for="sortSelect">Sort</label>
           <select id="sortSelect" aria-label="Sort dashboards">
-            <option value="pinned">Pinned first</option>
             <option value="name-asc">Name (A–Z)</option>
             <option value="name-desc">Name (Z–A)</option>
             <option value="updated-desc">Last updated (newest)</option>
@@ -397,9 +396,8 @@
     const byNameAsc = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
     // The chosen sort mode only decides order *within* the pinned group and
     // *within* the rest — pinned dashboards always come first, no matter
-    // which mode is active. ("Pinned first" now just falls through to
-    // plain name order, since the pinned-first tiebreak below already does
-    // its job.)
+    // which mode is active (so there's no separate "Pinned first" option;
+    // every mode already behaves that way).
     let cmp;
     switch (sortSelect.value) {
       case "name-desc":
@@ -411,7 +409,6 @@
       case "updated-asc":
         cmp = (a, b) => updatedTime(a) - updatedTime(b) || byNameAsc(a, b);
         break;
-      case "pinned":
       case "name-asc":
       default:
         cmp = byNameAsc;
