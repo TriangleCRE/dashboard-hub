@@ -47,6 +47,45 @@
   .status-ok{color:var(--green-dark);background:rgba(51,166,63,.12)}
   .status-none{color:var(--ink-soft);background:#eef0f1}
   table.tracker td.col-actions{text-align:right}
+
+  /* ---------- CLICK-TO-EDIT CELLS (Owner / Last updated / Next update due / Sources) ---------- */
+  /* Everything in these columns is editable right in the table — click a
+     value (or tab to it and press Enter) to turn it into a field, save
+     with Enter/blur, back out with Escape. No modal needed for these. */
+  td.editable{cursor:pointer;border-radius:8px}
+  td.editable:hover:not(.editing){background:#eef6ef}
+  td.editable:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
+  .editable-hint{
+    opacity:0;margin-left:7px;font-size:11px;color:var(--ink-soft);
+    transition:opacity .12s;
+  }
+  td.editable:hover .editable-hint{opacity:1}
+  td.editable.editing{cursor:default;background:transparent}
+  .cell-input{
+    font-family:inherit;font-size:13.5px;color:var(--ink);
+    border:1.5px solid var(--green);border-radius:7px;padding:6px 9px;
+    width:100%;min-width:130px;background:#fff;
+  }
+  .cell-input:focus{outline:none;box-shadow:0 0 0 3px rgba(51,166,63,.15)}
+  textarea.cell-input{resize:vertical;min-height:72px;min-width:220px;white-space:normal}
+  .cell-edit-actions{display:flex;gap:8px;margin-top:8px}
+  .cell-edit-actions button{
+    font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;
+    border-radius:7px;padding:6px 12px;border:1.5px solid var(--line);background:#fff;
+  }
+  .cell-edit-actions button:hover{background:#f0f1f2}
+  .cell-edit-actions button.primary{background:var(--green);color:#fff;border-color:var(--green)}
+  .cell-edit-actions button.primary:hover{background:var(--green-dark)}
+  .cell-saving{opacity:.55;pointer-events:none}
+  .cell-error{color:var(--red);font-size:11.5px;font-weight:600;margin-top:6px;white-space:normal}
+  .add-sources-btn{
+    font-family:inherit;font-size:12px;font-weight:600;color:var(--green-dark);
+    background:transparent;border:1.5px dashed #b9d9bb;border-radius:20px;
+    padding:4px 11px;cursor:pointer;
+  }
+  .add-sources-btn:hover{border-color:var(--green);background:rgba(51,166,63,.08)}
+  .edit-sources-btn{margin-left:7px}
+  td.col-sources{white-space:normal}
 </style>
 </head>
 <body>
@@ -76,9 +115,10 @@
       <p class="section-hint">
         Every dashboard on the Hub, in one table: when it was last updated, when it's next
         due, who's the one person that can edit it in Claude Code, and — hover or tab to the
-        <strong>ⓘ</strong> — the sources needed to update it. Adding a dashboard here (or on the
-        Hub) adds it to both; editing "Last updated" here updates the Hub too, since both pages
-        read and write the exact same record.
+        <strong>ⓘ</strong> — the sources needed to update it. Click any Owner, Last updated,
+        Next update due, or Sources value to edit it right here — no form to open. Adding a
+        dashboard here (or on the Hub) adds it to both; any edit made here updates the Hub too,
+        since both pages read and write the exact same record.
       </p>
       <div class="toolbar">
         <div class="search-wrap">
@@ -298,16 +338,43 @@
     return trimmed ? trimmed[0].toUpperCase() : "?";
   }
 
+  function ownerDisplayHtml(s){
+    const owner = s.owner || "Unassigned";
+    return `<span class="owner-pill"><span class="owner-avatar">${esc(ownerInitial(owner))}</span>${esc(owner)}</span>`;
+  }
+
+  function lastUpdatedDisplayHtml(s){
+    return s.lastUpdated ? esc(s.lastUpdated) : `<span class="muted">Add date</span>`;
+  }
+
+  function nextUpdateDueDisplayHtml(s){
+    const status = dueStatus(s);
+    return `<span class="status-pill ${status.cls}">${status.label}</span>`;
+  }
+
+  function sourcesDisplayHtml(s){
+    if (s.sources) {
+      return `
+        <span class="info-pop">
+          <button type="button" class="info-icon" aria-label="Sources needed to update ${esc(s.name)}">ⓘ</button>
+          <span class="info-pop-bubble">${esc(s.sources)}</span>
+        </span>
+        <button type="button" class="icon-btn edit-sources-btn" data-edit-sources-id="${s.id}" title="Edit sources" aria-label="Edit sources for ${esc(s.name)}">✎</button>`;
+    }
+    return `<button type="button" class="add-sources-btn" data-edit-sources-id="${s.id}">+ Add</button>`;
+  }
+
+  // The three single-line fields editable right in the table. Each entry's
+  // `display` re-renders that cell's normal (non-editing) contents, so
+  // finishing/cancelling an edit can put it back without a full re-render.
+  const EDITABLE_FIELDS = {
+    owner: { label: "owner", maxLength: 80, display: ownerDisplayHtml },
+    lastUpdated: { label: "last updated date", maxLength: 40, display: lastUpdatedDisplayHtml },
+    nextUpdateDue: { label: "next update due date", maxLength: 40, display: nextUpdateDueDisplayHtml },
+  };
+
   function renderTable(sites){
     const rows = sites.map(s => {
-      const status = dueStatus(s);
-      const owner = s.owner || "Unassigned";
-      const sourcesCell = s.sources
-        ? `<span class="info-pop">
-             <button type="button" class="info-icon" aria-label="Sources needed to update ${esc(s.name)}">ⓘ</button>
-             <span class="info-pop-bubble">${esc(s.sources)}</span>
-           </span>`
-        : `<span class="muted">—</span>`;
       const pinnedBadge = s.pinned ? `<span class="pinned-badge" style="margin-right:6px">★</span>` : "";
       return `
         <tr>
@@ -317,12 +384,12 @@
             </div>
           </td>
           <td class="col-desc">${esc(s.desc || "")}</td>
-          <td><span class="owner-pill"><span class="owner-avatar">${esc(ownerInitial(owner))}</span>${esc(owner)}</span></td>
-          <td>${s.lastUpdated ? esc(s.lastUpdated) : `<span class="muted">—</span>`}</td>
-          <td><span class="status-pill ${status.cls}">${status.label}</span></td>
-          <td>${sourcesCell}</td>
+          <td class="editable" data-field="owner" data-id="${s.id}" tabindex="0">${ownerDisplayHtml(s)}<span class="editable-hint">✎</span></td>
+          <td class="editable" data-field="lastUpdated" data-id="${s.id}" tabindex="0">${lastUpdatedDisplayHtml(s)}<span class="editable-hint">✎</span></td>
+          <td class="editable" data-field="nextUpdateDue" data-id="${s.id}" tabindex="0">${nextUpdateDueDisplayHtml(s)}<span class="editable-hint">✎</span></td>
+          <td class="col-sources">${sourcesDisplayHtml(s)}</td>
           <td class="col-actions">
-            <button type="button" class="icon-btn" data-edit-id="${s.id}" title="Edit" aria-label="Edit ${esc(s.name)}">✎</button>
+            <button type="button" class="icon-btn" data-edit-id="${s.id}" title="Edit all fields" aria-label="Edit all fields for ${esc(s.name)}">✎</button>
           </td>
         </tr>`;
     }).join("");
@@ -350,6 +417,139 @@
         const site = sites.find(s => String(s.id) === btn.getAttribute("data-edit-id"));
         if (site) modal.openEditModal(site);
       });
+    });
+
+    tableHost.querySelectorAll("td.editable[data-field]").forEach(cell => {
+      const openThisCell = () => {
+        if (cell.classList.contains("editing")) return;
+        const site = sites.find(s => String(s.id) === cell.getAttribute("data-id"));
+        if (site) beginFieldEdit(cell, site, cell.getAttribute("data-field"));
+      };
+      cell.addEventListener("click", openThisCell);
+      cell.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openThisCell(); }
+      });
+    });
+
+    tableHost.querySelectorAll("[data-edit-sources-id]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const site = sites.find(s => String(s.id) === btn.getAttribute("data-edit-sources-id"));
+        if (site) beginSourcesEdit(btn.closest("td.col-sources"), site);
+      });
+    });
+  }
+
+  /* =========================================================================
+     INLINE FIELD EDITING
+     -------------------------------------------------------------------------
+     PUT /api/dashboards/:id expects the whole record, not a partial patch —
+     so saveField() sends every field the site already has, with just the
+     one being edited swapped in. `site` objects come straight from the API
+     response, so their keys already match what PUT expects.
+     ========================================================================= */
+  async function saveField(site, field, value){
+    const record = {
+      name: site.name, url: site.url, desc: site.desc, note: site.note,
+      sitePassword: site.sitePassword, walkthrough: site.walkthrough,
+      lastUpdated: site.lastUpdated, nextUpdateDue: site.nextUpdateDue,
+      owner: site.owner, sources: site.sources,
+    };
+    record[field] = value;
+    const updated = await apiRequest(`${API_BASE}/${site.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(record),
+    });
+    Object.assign(site, updated);
+    const cached = allSites.find(s => String(s.id) === String(site.id));
+    if (cached) Object.assign(cached, updated);
+    return updated;
+  }
+
+  function beginFieldEdit(cell, site, field){
+    const config = EDITABLE_FIELDS[field];
+    const currentValue = site[field] || "";
+    cell.classList.add("editing");
+    cell.innerHTML = `<input type="text" class="cell-input" maxlength="${config.maxLength}" value="${esc(currentValue)}" aria-label="Edit ${config.label} for ${esc(site.name)}" />`;
+    const input = cell.querySelector("input");
+    input.focus();
+    input.select();
+
+    let settled = false;
+    const finish = async (commit) => {
+      if (settled) return;
+      settled = true;
+      if (!commit || input.value.trim() === currentValue) {
+        cell.classList.remove("editing");
+        cell.innerHTML = `${config.display(site)}<span class="editable-hint">✎</span>`;
+        return;
+      }
+      input.disabled = true;
+      cell.classList.add("cell-saving");
+      try {
+        await saveField(site, field, input.value.trim());
+        // Full re-render rather than patching just this cell: sort/filter
+        // (esp. "Next update due (soonest)" and the overdue/due-soon
+        // filters) may depend on the field that just changed.
+        applyFiltersAndRender();
+      } catch (err) {
+        cell.classList.remove("cell-saving");
+        input.disabled = false;
+        input.insertAdjacentHTML("afterend", `<div class="cell-error">Couldn't save: ${esc(err.message)}</div>`);
+        settled = false;
+        input.focus();
+      }
+    };
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); finish(true); }
+      if (e.key === "Escape") { e.preventDefault(); finish(false); }
+    });
+    input.addEventListener("blur", () => finish(true));
+  }
+
+  function beginSourcesEdit(cell, site){
+    const currentValue = site.sources || "";
+    cell.classList.add("editing");
+    cell.innerHTML = `
+      <textarea class="cell-input" maxlength="300" aria-label="Edit sources for ${esc(site.name)}" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase">${esc(currentValue)}</textarea>
+      <div class="cell-edit-actions">
+        <button type="button" class="cell-cancel">Cancel</button>
+        <button type="button" class="cell-save primary">Save</button>
+      </div>`;
+    const textarea = cell.querySelector("textarea");
+    textarea.focus();
+    textarea.select();
+
+    const finish = (newHtml) => {
+      cell.classList.remove("editing", "cell-saving");
+      cell.innerHTML = newHtml;
+      tableHost.querySelectorAll(`[data-edit-sources-id="${site.id}"]`).forEach(btn => {
+        btn.addEventListener("click", () => beginSourcesEdit(btn.closest("td.col-sources"), site));
+      });
+    };
+
+    cell.querySelector(".cell-cancel").addEventListener("click", () => finish(sourcesDisplayHtml(site)));
+    textarea.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { e.preventDefault(); finish(sourcesDisplayHtml(site)); }
+    });
+    cell.querySelector(".cell-save").addEventListener("click", async () => {
+      const value = textarea.value.trim();
+      if (value === currentValue) return finish(sourcesDisplayHtml(site));
+      textarea.disabled = true;
+      cell.classList.add("cell-saving");
+      try {
+        await saveField(site, "sources", value);
+        // Full re-render, not just this cell: the Search box matches
+        // against sources text too, so a save can change the filtered set.
+        applyFiltersAndRender();
+      } catch (err) {
+        cell.classList.remove("cell-saving");
+        textarea.disabled = false;
+        const existingError = cell.querySelector(".cell-error");
+        if (existingError) existingError.remove();
+        cell.querySelector(".cell-edit-actions").insertAdjacentHTML("beforebegin", `<div class="cell-error">Couldn't save: ${esc(err.message)}</div>`);
+      }
     });
   }
 
