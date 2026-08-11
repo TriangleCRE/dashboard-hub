@@ -66,6 +66,13 @@ sync step to write. Add a dashboard on either page and it appears on both;
 edit "Last updated" (or anything else) from the Tracker and the Hub reflects
 it on its next load, because both pages read and write the exact same row.
 
+On the Tracker, Owner, Last updated, Next update due, and Sources are also
+editable right in the table — click a value (or tab to it and press Enter)
+to turn it into a field, save with Enter/blur (Sources gets an explicit
+Save/Cancel since it's multi-line), or back out with Escape. The pencil
+icon in the last column still opens the full Add/Edit modal for everything
+else (name, URL, description, site password, note, walkthrough link).
+
 Every dashboard currently has exactly one owner — the one person who can
 edit it in Claude Code. For now that's Sarah Dahl for everything, including
 anything added from here on (the Owner field defaults to her when left
