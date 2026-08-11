@@ -104,25 +104,11 @@
           <label for="fieldUrl">URL</label>
           <input type="text" id="fieldUrl" placeholder="https://" maxlength="500" required />
         </div>
-        <div class="field">
-          <label for="fieldLastUpdated">Last updated <span class="hint">(optional — any format, e.g. "Aug 5, 2026")</span></label>
-          <input type="text" id="fieldLastUpdated" maxlength="40" />
-        </div>
-        <div class="field">
-          <label for="fieldNextUpdateDue">Next update due <span class="hint">(optional — any format, e.g. "Sep 1, 2026")</span></label>
-          <input type="text" id="fieldNextUpdateDue" maxlength="40" />
-        </div>
-        <div class="field">
-          <label for="fieldOwner">Owner <span class="hint">(the one person who edits this in Claude Code)</span></label>
-          <input type="text" id="fieldOwner" maxlength="80" />
-        </div>
+
+        <div class="modal-section-label">Shown on the Hub</div>
         <div class="field">
           <label for="fieldDesc">Description <span class="hint">(optional)</span></label>
           <textarea id="fieldDesc" maxlength="200"></textarea>
-        </div>
-        <div class="field">
-          <label for="fieldSources">Sources to update it <span class="hint">(optional — shown as a hover tip on the Tracker)</span></label>
-          <textarea id="fieldSources" maxlength="300" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase"></textarea>
         </div>
         <div class="field">
           <label for="fieldSitePassword">Site password <span class="hint">(optional)</span></label>
@@ -136,6 +122,25 @@
           <label for="fieldWalkthrough">Walkthrough link <span class="hint">(optional)</span></label>
           <input type="text" id="fieldWalkthrough" placeholder="https://" maxlength="500" />
         </div>
+
+        <div class="modal-section-label">Tracked on the Tracker</div>
+        <div class="field">
+          <label for="fieldLastUpdated">Last updated <span class="hint">(optional — any format, e.g. "Aug 5, 2026")</span></label>
+          <input type="text" id="fieldLastUpdated" maxlength="40" />
+        </div>
+        <div class="field">
+          <label for="fieldNextUpdateDue">Next update due <span class="hint">(optional — any format, e.g. "Sep 1, 2026", or "As needed")</span></label>
+          <input type="text" id="fieldNextUpdateDue" maxlength="40" />
+        </div>
+        <div class="field">
+          <label for="fieldOwner">Owner <span class="hint">(the one person who edits this in Claude Code)</span></label>
+          <input type="text" id="fieldOwner" maxlength="80" />
+        </div>
+        <div class="field">
+          <label for="fieldSources">Sources to update it <span class="hint">(optional — shown as a hover tip on the Tracker)</span></label>
+          <textarea id="fieldSources" maxlength="300" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase"></textarea>
+        </div>
+
         <div class="modal-actions" id="modalActionsRow">
           <button type="button" class="btn-remove" id="deleteDashboard" hidden>Delete Dashboard</button>
           <a class="btn btn-ghost" id="cancelAddDashboard" href="javascript:void(0)">Cancel</a>

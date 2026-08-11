@@ -71,13 +71,46 @@ editable right in the table — click a value (or tab to it and press Enter)
 to turn it into a field, save with Enter/blur (Sources gets an explicit
 Save/Cancel since it's multi-line), or back out with Escape. The pencil
 icon in the last column still opens the full Add/Edit modal for everything
-else (name, URL, description, site password, note, walkthrough link).
+else (name, URL, description, site password, note, walkthrough link). The
+Add/Edit modal itself is grouped into "Shown on the Hub" and "Tracked on
+the Tracker" sections, so adding a dashboard from either page makes clear
+you're filling out both at once.
 
 Every dashboard currently has exactly one owner — the one person who can
-edit it in Claude Code. For now that's Sarah Dahl for everything, including
-anything added from here on (the Owner field defaults to her when left
-blank), but it's a plain text field so a dashboard can be handed off to
-someone else later just by editing it.
+edit it in Claude Code. For now that's Sarah Dahl for everything except the
+211/213 N Lewis Billing Tool (Oliver Dahl), including anything added from
+here on (the Owner field defaults to Sarah when left blank), but it's a
+plain text field so a dashboard can be handed off to someone else later
+just by editing it.
+
+The Hub's pinned/"start here" card (currently just the "How to Create a
+Claude Dashboard" guide) only pins and badges on the Hub — the Tracker
+shows every dashboard the same way, sorted by whichever mode is selected,
+since "start here" isn't a Tracker concept.
+
+### Update checklist
+
+Under "Next update due" on the Tracker, each dashboard can carry a
+checklist of specific reports/tasks and their due dates — e.g. "Create/
+update the Aug 2026 report" due Sep 15, 2026. Click the checklist toggle
+to expand it, check items off as you do them, and add new ones as they
+come up (`+` in the add row, or type the label and press Enter).
+
+Checking an item off is what actually updates the dashboard's "Last
+updated" (to today) — adding, editing, or deleting an item doesn't, since
+those aren't "the update happened." Whatever's left unchecked also drives
+"Next update due": it's always the soonest due date among items not yet
+checked off, recomputed on every checklist change, so once a dashboard has
+a checklist, "Next update due" stops being hand-typed and comes from the
+checklist instead. A dashboard with no checklist yet keeps the plain
+editable field (handy for "As needed" dashboards, or a quick hand-typed
+date that doesn't need a whole checklist).
+
+Deal Pipeline, Loan Database, and How to Create a Claude Dashboard are
+set to "As needed" — they get updated as new deals/loans show up or the
+guide needs a tweak, not on a schedule. Quarterly Property Reports has its
+full monthly/quarterly/annual pull schedule seeded in as a checklist (see
+`PROPERTY_REPORTS_CHECKLIST` in `src/db.js`).
 
 ## Local development
 

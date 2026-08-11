@@ -69,6 +69,38 @@ function parseDashboardBody(body) {
   return { fields: { name, url, desc, note, sitePassword, walkthrough, lastUpdated, nextUpdateDue, owner, sources } };
 }
 
+// Validates a new checklist item (label required, due date optional — a
+// checklist can hold "as needed" items with no date at all).
+function parseChecklistItemBody(body) {
+  const label = typeof body.label === "string" ? body.label.trim() : "";
+  const dueDate = typeof body.dueDate === "string" ? body.dueDate.trim() : "";
+  if (!label) return { error: "A checklist item needs a label." };
+  if (label.length > 140) return { error: "Checklist item label must be 140 characters or fewer." };
+  if (dueDate.length > 40) return { error: "Checklist item due date must be 40 characters or fewer." };
+  return { fields: { label, dueDate } };
+}
+
+// Validates a checklist item edit. Every field is optional here (PATCH,
+// not PUT) — at least one of label/dueDate/done has to be present, or
+// there's nothing to change.
+function parseChecklistItemPatch(body) {
+  const patch = {};
+  if (typeof body.label === "string") {
+    const label = body.label.trim();
+    if (!label) return { error: "A checklist item needs a label." };
+    if (label.length > 140) return { error: "Checklist item label must be 140 characters or fewer." };
+    patch.label = label;
+  }
+  if (typeof body.dueDate === "string") {
+    const dueDate = body.dueDate.trim();
+    if (dueDate.length > 40) return { error: "Checklist item due date must be 40 characters or fewer." };
+    patch.dueDate = dueDate;
+  }
+  if (typeof body.done === "boolean") patch.done = body.done;
+  if (Object.keys(patch).length === 0) return { error: "Nothing to change." };
+  return { fields: patch };
+}
+
 function createApp({ staticDir }) {
   const app = express();
   app.disable("x-powered-by");
@@ -177,6 +209,54 @@ function createApp({ staticDir }) {
     } catch (err) {
       console.error("DELETE /api/dashboards/:id failed:", err);
       res.status(500).json({ error: "Could not remove the dashboard." });
+    }
+  });
+
+  // The update checklist (public/tracker.html): add/check-off/edit/remove
+  // one item at a time, rather than round-tripping the whole dashboard
+  // record through PUT for every checkbox click. Checking an item off is
+  // what actually bumps last_updated (see db.updateChecklistItem) — that's
+  // the "check it off and it updates Last updated" behavior.
+  app.post("/api/dashboards/:id/checklist", async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid id." });
+    const { fields, error } = parseChecklistItemBody(req.body || {});
+    if (error) return res.status(400).json({ error });
+    try {
+      const updated = await dashboards.addChecklistItem(id, fields);
+      if (!updated) return res.status(404).json({ error: "Dashboard not found." });
+      res.status(201).json(updated);
+    } catch (err) {
+      console.error("POST /api/dashboards/:id/checklist failed:", err);
+      res.status(400).json({ error: err.message || "Could not add the checklist item." });
+    }
+  });
+
+  app.patch("/api/dashboards/:id/checklist/:itemId", async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid id." });
+    const { fields, error } = parseChecklistItemPatch(req.body || {});
+    if (error) return res.status(400).json({ error });
+    try {
+      const updated = await dashboards.updateChecklistItem(id, req.params.itemId, fields);
+      if (!updated) return res.status(404).json({ error: "Dashboard not found." });
+      res.json(updated);
+    } catch (err) {
+      console.error("PATCH /api/dashboards/:id/checklist/:itemId failed:", err);
+      res.status(500).json({ error: "Could not save the checklist item." });
+    }
+  });
+
+  app.delete("/api/dashboards/:id/checklist/:itemId", async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: "Invalid id." });
+    try {
+      const updated = await dashboards.deleteChecklistItem(id, req.params.itemId);
+      if (!updated) return res.status(404).json({ error: "Dashboard not found." });
+      res.json(updated);
+    } catch (err) {
+      console.error("DELETE /api/dashboards/:id/checklist/:itemId failed:", err);
+      res.status(500).json({ error: "Could not remove the checklist item." });
     }
   });
 

@@ -153,6 +153,14 @@ a.btn-remove:hover{text-decoration:underline}
 .field label{
   display:block;font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:5px;
 }
+/* Groups the Add/Edit form into "shows up on the Hub" vs. "tracked on the
+   Tracker" so adding a dashboard from either page makes clear you're
+   filling out both at once — see the field order in index.html/tracker.html. */
+.modal-section-label{
+  font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);
+  font-weight:700;margin:20px 0 14px;padding-top:16px;border-top:1px solid var(--line);
+}
+.modal-section-label:first-of-type{margin-top:18px}
 .field .hint{font-weight:400;color:var(--ink-soft);text-transform:none;letter-spacing:0}
 .field input, .field textarea{
   width:100%;font-family:inherit;font-size:14px;color:var(--ink);
