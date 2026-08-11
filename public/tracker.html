@@ -3,40 +3,50 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Triangle Investment Group — Dashboard Hub</title>
+<title>Triangle Investment Group — Dashboard Tracker</title>
 <link rel="stylesheet" href="/shared.css" />
 <style>
-  /* ---------- HUB-ONLY: card grid ---------- */
-  .grid{
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;
-  }
-  .card{
+  /* ---------- TRACKER-ONLY: table ---------- */
+  .table-wrap{
     background:var(--card);border:1px solid var(--line);border-radius:14px;
-    box-shadow:var(--shadow);padding:22px 22px 20px;display:flex;flex-direction:column;
-    transition:transform .12s ease, box-shadow .12s ease;
+    box-shadow:var(--shadow);overflow-x:auto;
   }
-  .card:hover{transform:translateY(-2px);box-shadow:0 2px 6px rgba(0,0,0,.08),0 14px 34px rgba(0,0,0,.10)}
-  .card.pinned{
-    background:var(--orange-tint);border:1.5px solid var(--orange);
-    box-shadow:0 1px 3px rgba(232,134,58,.15), 0 8px 24px rgba(232,134,58,.12);
+  table.tracker{width:100%;border-collapse:collapse;font-size:13.5px;white-space:nowrap}
+  table.tracker th, table.tracker td{
+    padding:13px 16px;text-align:left;border-bottom:1px solid var(--line);
   }
-  .pinned-badge{
-    display:inline-block;font-size:11px;font-weight:700;color:#fff;
-    background:var(--orange);border-radius:20px;padding:3px 10px;
-    letter-spacing:.2px;flex:none;
+  table.tracker th{
+    font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--ink-soft);font-weight:700;background:#fafbfb;white-space:nowrap;
   }
-  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
-  .card-head-actions{display:flex;align-items:center;gap:8px;flex:none}
-  .card .name{font-size:16.5px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
-  .card .name .dot{width:9px;height:9px;border-radius:50%;background:var(--green);flex:none}
-  .card .desc{font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;flex:1}
-  .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-soft);margin-bottom:16px}
-  .meta .k{font-weight:600;color:var(--ink)}
-  .note-text{
-    font-size:12.5px;color:var(--ink-soft);font-style:italic;
-    line-height:1.4;margin-bottom:14px;
+  table.tracker tbody tr:last-child td{border-bottom:none}
+  table.tracker tbody tr:hover{background:#fafbfb}
+  table.tracker td.col-name{white-space:normal;min-width:200px}
+  table.tracker td.col-desc{white-space:normal;color:var(--ink-soft);min-width:220px;max-width:320px}
+  .row-name{display:flex;align-items:center;gap:8px;font-weight:700}
+  .row-name .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
+  .row-open{
+    color:var(--ink-soft);text-decoration:none;font-size:12px;margin-left:2px;
   }
-  .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .row-open:hover{color:var(--green-dark)}
+  .owner-pill{
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    color:var(--ink);background:#eef0f1;border-radius:20px;padding:4px 10px 4px 4px;
+  }
+  .owner-avatar{
+    width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex:none;
+  }
+  .muted{color:var(--ink-soft)}
+  .status-pill{
+    display:inline-block;font-size:11.5px;font-weight:700;border-radius:20px;padding:4px 10px;
+    white-space:nowrap;
+  }
+  .status-overdue{color:var(--red);background:var(--red-tint)}
+  .status-soon{color:var(--amber);background:var(--amber-tint)}
+  .status-ok{color:var(--green-dark);background:rgba(51,166,63,.12)}
+  .status-none{color:var(--ink-soft);background:#eef0f1}
+  table.tracker td.col-actions{text-align:right}
 </style>
 </head>
 <body>
@@ -48,21 +58,28 @@
       <div class="top-inner">
         <img id="topLogo" alt="Triangle Investment Group" />
         <div class="titles">
-          <h1>Dashboard Hub</h1>
-          <p>All Triangle Investment Group dashboards in one place</p>
+          <h1>Dashboard Tracker</h1>
+          <p>Ownership, update schedule, and sources for every dashboard</p>
         </div>
         <nav class="top-nav">
-          <a href="/" class="top-nav-link active">Dashboards</a>
-          <a href="/tracker" class="top-nav-link">Tracker</a>
+          <a href="/" class="top-nav-link">Dashboards</a>
+          <a href="/tracker" class="top-nav-link active">Tracker</a>
         </nav>
       </div>
     </header>
 
     <main>
       <div class="section-row">
-        <div class="section-label">Dashboards</div>
+        <div class="section-label">Tracker</div>
         <button type="button" class="btn btn-add" id="openAddDashboard">+ Add Dashboard</button>
       </div>
+      <p class="section-hint">
+        Every dashboard on the Hub, in one table: when it was last updated, when it's next
+        due, who's the one person that can edit it in Claude Code, and — hover or tab to the
+        <strong>ⓘ</strong> — the sources needed to update it. Adding a dashboard here (or on the
+        Hub) adds it to both; editing "Last updated" here updates the Hub too, since both pages
+        read and write the exact same record.
+      </p>
       <div class="toolbar">
         <div class="search-wrap">
           <input type="search" id="searchInput" placeholder="Search dashboards…" aria-label="Search dashboards" />
@@ -70,6 +87,7 @@
         <div class="toolbar-controls">
           <label class="toolbar-label" for="sortSelect">Sort</label>
           <select id="sortSelect" aria-label="Sort dashboards">
+            <option value="due-asc">Next update due (soonest)</option>
             <option value="name-asc">Name (A–Z)</option>
             <option value="name-desc">Name (Z–A)</option>
             <option value="updated-desc">Last updated (newest)</option>
@@ -78,18 +96,19 @@
           <label class="toolbar-label" for="filterSelect">Show</label>
           <select id="filterSelect" aria-label="Filter dashboards">
             <option value="all">All dashboards</option>
+            <option value="overdue">Overdue</option>
+            <option value="soon">Due soon (7 days)</option>
             <option value="pinned">Pinned only</option>
-            <option value="walkthrough">Has walkthrough</option>
           </select>
         </div>
       </div>
-      <div class="grid" id="grid"></div>
+      <div id="tableHost"></div>
     </main>
 
   </div>
 
   <!-- ===================== ADD / EDIT DASHBOARD MODAL ===================== -->
-  <!-- Shared verbatim with tracker.html (same ids) — see public/shared.js. -->
+  <!-- Shared verbatim with index.html (same ids) — see public/shared.js. -->
   <div class="modal-overlay" id="addModalOverlay" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
       <h2 id="addModalTitle">Add Dashboard</h2>
@@ -155,31 +174,24 @@
 <script src="/shared.js"></script>
 <script>
   /* =========================================================================
-     TRIANGLE DASHBOARD HUB
+     DASHBOARD TRACKER
      -------------------------------------------------------------------------
-     The dashboard list itself lives in Postgres (see src/db.js), not in this
-     file — it's fetched from /api/dashboards. Use the "+ Add Dashboard"
-     button and each card's pencil icon to manage the list; there's nothing
-     to hand-edit here anymore. See public/shared.js for the API helpers and
-     the Add/Edit modal (shared with tracker.html), and public/tracker.html
-     for the ownership/schedule/sources view over this same list.
+     A table-of-contents view over the exact same /api/dashboards list the
+     Hub (index.html) renders as cards — same data, same Add/Edit modal (see
+     public/shared.js), just a different layout suited to scanning ownership
+     and update schedule at a glance. Because there is only one underlying
+     record per dashboard, editing anything here (including "Last updated")
+     is immediately reflected on the Hub the next time it loads, and vice
+     versa — there's no separate list to keep in sync.
      ========================================================================= */
   document.getElementById("topLogo").src = LOGO;
 
-  const grid = document.getElementById("grid");
+  const tableHost = document.getElementById("tableHost");
 
   function renderMessage(text){
-    grid.innerHTML = `<p class="grid-message">${esc(text)}</p>`;
+    tableHost.innerHTML = `<p class="grid-message">${esc(text)}</p>`;
   }
 
-  /* =========================================================================
-     SEARCH / SORT / FILTER
-     -------------------------------------------------------------------------
-     Purely client-side over whatever the API last returned — `allSites` is
-     the untouched list, everything below derives a view of it. Re-run on
-     every keystroke/select change; no need to re-fetch just to re-order or
-     narrow what's already in memory.
-     ========================================================================= */
   let allSites = [];
   const searchInput = document.getElementById("searchInput");
   const sortSelect = document.getElementById("sortSelect");
@@ -187,8 +199,27 @@
 
   function matchesSearch(site, query){
     if (!query) return true;
-    const haystack = [site.name, site.desc, site.note].filter(Boolean).join(" \n ").toLowerCase();
+    const haystack = [site.name, site.desc, site.owner, site.sources].filter(Boolean).join(" \n ").toLowerCase();
     return haystack.includes(query);
+  }
+
+  // Days between now and the parsed "next update due" date. null when the
+  // field is empty or isn't a date JS can parse (freeform text like "when
+  // Q3 closes" is allowed but can't be scored).
+  function dueInDays(site){
+    if (!site.nextUpdateDue) return null;
+    const t = Date.parse(site.nextUpdateDue);
+    if (isNaN(t)) return null;
+    return Math.round((t - Date.now()) / 86400000);
+  }
+
+  function dueStatus(site){
+    const days = dueInDays(site);
+    if (!site.nextUpdateDue) return { cls: "status-none", label: "Not set" };
+    if (days === null) return { cls: "status-none", label: esc(site.nextUpdateDue) };
+    if (days < 0) return { cls: "status-overdue", label: `${esc(site.nextUpdateDue)} · overdue` };
+    if (days <= 7) return { cls: "status-soon", label: `${esc(site.nextUpdateDue)} · due soon` };
+    return { cls: "status-ok", label: esc(site.nextUpdateDue) };
   }
 
   function filterSites(sites){
@@ -196,28 +227,35 @@
     const filter = filterSelect.value;
     return sites.filter(s => {
       if (filter === "pinned" && !s.pinned) return false;
-      if (filter === "walkthrough" && !s.walkthrough) return false;
+      if (filter === "overdue" || filter === "soon") {
+        const days = dueInDays(s);
+        if (days === null) return false;
+        if (filter === "overdue" && !(days < 0)) return false;
+        if (filter === "soon" && !(days >= 0 && days <= 7)) return false;
+      }
       return matchesSearch(s, query);
     });
   }
 
-  // Best-effort: freeform "last updated" text (e.g. "Aug 5, 2026") parsed as
-  // a date when possible. Unparseable/empty values sort to the bottom of
-  // "newest first" and the top of "oldest first" either way, rather than
-  // throwing off the rest of the ordering.
+  // Same "best-effort date parse, unparseable sorts last" approach as the
+  // Hub. For "next update due (soonest)" specifically, unset/unparseable
+  // dates sort to the very end regardless of asc/desc, since there's no
+  // due date to rank them by.
   function updatedTime(site){
     if (!site.lastUpdated) return -Infinity;
     const t = Date.parse(site.lastUpdated);
     return isNaN(t) ? -Infinity : t;
   }
 
+  function dueTimeForSort(site){
+    if (!site.nextUpdateDue) return Infinity;
+    const t = Date.parse(site.nextUpdateDue);
+    return isNaN(t) ? Infinity : t;
+  }
+
   function sortSites(sites){
     const sorted = sites.slice();
     const byNameAsc = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-    // The chosen sort mode only decides order *within* the pinned group and
-    // *within* the rest — pinned dashboards always come first, no matter
-    // which mode is active (so there's no separate "Pinned first" option;
-    // every mode already behaves that way).
     let cmp;
     switch (sortSelect.value) {
       case "name-desc":
@@ -230,8 +268,11 @@
         cmp = (a, b) => updatedTime(a) - updatedTime(b) || byNameAsc(a, b);
         break;
       case "name-asc":
-      default:
         cmp = byNameAsc;
+        break;
+      case "due-asc":
+      default:
+        cmp = (a, b) => dueTimeForSort(a) - dueTimeForSort(b) || byNameAsc(a, b);
         break;
     }
     sorted.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || cmp(a, b));
@@ -245,45 +286,66 @@
       renderMessage("No dashboards match your search/filter.");
       return;
     }
-    renderCards(visible);
+    renderTable(visible);
   }
 
   searchInput.addEventListener("input", applyFiltersAndRender);
   sortSelect.addEventListener("change", applyFiltersAndRender);
   filterSelect.addEventListener("change", applyFiltersAndRender);
 
-  function renderCards(sites){
-    grid.innerHTML = sites.map(s => {
-      const meta = [];
-      if (s.lastUpdated) meta.push(`<span><span class="k">Last updated:</span> ${esc(s.lastUpdated)}</span>`);
-      const metaHtml = meta.length ? `<div class="meta">${meta.join("")}</div>` : "";
-      const pill = s.sitePassword
-        ? `<div style="margin-bottom:14px"><span class="pill">Site password: ${esc(s.sitePassword)}</span></div>` : "";
-      const noteText = s.note ? `<div class="note-text">${esc(s.note)}</div>` : "";
-      const walk = s.walkthrough
-        ? `<a class="btn btn-ghost" href="${esc(s.walkthrough)}" target="_blank" rel="noopener">▶ Walkthrough</a>` : "";
-      const pinnedBadge = s.pinned ? `<span class="pinned-badge">★ Start here</span>` : "";
+  function ownerInitial(owner){
+    const trimmed = (owner || "").trim();
+    return trimmed ? trimmed[0].toUpperCase() : "?";
+  }
+
+  function renderTable(sites){
+    const rows = sites.map(s => {
+      const status = dueStatus(s);
+      const owner = s.owner || "Unassigned";
+      const sourcesCell = s.sources
+        ? `<span class="info-pop">
+             <button type="button" class="info-icon" aria-label="Sources needed to update ${esc(s.name)}">ⓘ</button>
+             <span class="info-pop-bubble">${esc(s.sources)}</span>
+           </span>`
+        : `<span class="muted">—</span>`;
+      const pinnedBadge = s.pinned ? `<span class="pinned-badge" style="margin-right:6px">★</span>` : "";
       return `
-        <div class="card${s.pinned ? " pinned" : ""}">
-          <div class="card-head">
-            <div class="name"><span class="dot"></span>${esc(s.name)}</div>
-            <div class="card-head-actions">
-              ${pinnedBadge}
-              <button type="button" class="icon-btn" data-edit-id="${s.id}" title="Edit" aria-label="Edit ${esc(s.name)}">✎</button>
+        <tr>
+          <td class="col-name">
+            <div class="row-name">${pinnedBadge}<span class="dot"></span>${esc(s.name)}
+              <a class="row-open" href="${esc(s.url)}" target="_blank" rel="noopener" title="Open ${esc(s.name)}">↗</a>
             </div>
-          </div>
-          <div class="desc">${esc(s.desc)}</div>
-          ${metaHtml}
-          ${pill}
-          ${noteText}
-          <div class="actions">
-            <a class="btn" href="${esc(s.url)}" target="_blank" rel="noopener">Open dashboard →</a>
-            ${walk}
-          </div>
-        </div>`;
+          </td>
+          <td class="col-desc">${esc(s.desc || "")}</td>
+          <td><span class="owner-pill"><span class="owner-avatar">${esc(ownerInitial(owner))}</span>${esc(owner)}</span></td>
+          <td>${s.lastUpdated ? esc(s.lastUpdated) : `<span class="muted">—</span>`}</td>
+          <td><span class="status-pill ${status.cls}">${status.label}</span></td>
+          <td>${sourcesCell}</td>
+          <td class="col-actions">
+            <button type="button" class="icon-btn" data-edit-id="${s.id}" title="Edit" aria-label="Edit ${esc(s.name)}">✎</button>
+          </td>
+        </tr>`;
     }).join("");
 
-    grid.querySelectorAll("[data-edit-id]").forEach(btn => {
+    tableHost.innerHTML = `
+      <div class="table-wrap">
+        <table class="tracker">
+          <thead>
+            <tr>
+              <th>Dashboard</th>
+              <th>Description</th>
+              <th>Owner (Claude Code editor)</th>
+              <th>Last updated</th>
+              <th>Next update due</th>
+              <th>Sources</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+
+    tableHost.querySelectorAll("[data-edit-id]").forEach(btn => {
       btn.addEventListener("click", () => {
         const site = sites.find(s => String(s.id) === btn.getAttribute("data-edit-id"));
         if (site) modal.openEditModal(site);
@@ -302,7 +364,7 @@
       }
       applyFiltersAndRender();
     } catch (err) {
-      grid.innerHTML = `<p class="grid-message">Couldn't load dashboards (${esc(err.message)}). <a href="javascript:void(0)" id="retryLoad">Retry</a></p>`;
+      tableHost.innerHTML = `<p class="grid-message">Couldn't load dashboards (${esc(err.message)}). <a href="javascript:void(0)" id="retryLoad">Retry</a></p>`;
       const retry = document.getElementById("retryLoad");
       if (retry) retry.addEventListener("click", loadAndRender);
     }

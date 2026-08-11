@@ -32,10 +32,12 @@ Every dashboard on the hub — the ones it launched with and anything added
 since — is a row in a `dashboards` table in Postgres (Neon, attached to this
 Vercel project). There's no code to edit anymore:
 
-- The **"+ Add Dashboard"** button adds a new card.
-- The **pencil icon** on any card edits its name, URL, last-updated date,
-  description, note, and walkthrough link.
-- The **Remove** button on a card deletes it.
+- The **"+ Add Dashboard"** button (on either page, see below) adds a new
+  card/row.
+- The **pencil icon** on any card/row edits its name, URL, last-updated
+  date, next-update-due date, owner, description, sources, note, site
+  password, and walkthrough link.
+- The **Remove** button deletes it.
 
 Any team member can do all three. Because they all go through the
 `/api/dashboards` endpoints (`src/app.js`) to the same database (`src/db.js`),
@@ -46,6 +48,29 @@ The app creates the `dashboards` table itself, and seeds it with the
 original dashboards, the first time it handles a request against a fresh
 database — no manual migration step required, in local dev or in
 production.
+
+## Dashboard Hub vs. Tracker
+
+There are two pages over the same underlying dashboard list:
+
+- **`/` — the Hub.** The card grid people click through to open a
+  dashboard.
+- **`/tracker` — the Tracker.** A table-of-contents view for keeping the
+  hub itself maintained: when each dashboard was last updated, when it's
+  next due, who owns it, and what sources feed an update (hover or tab to
+  the ⓘ to see them).
+
+Both pages are just different renderings of the same `/api/dashboards` data
+and share one Add/Edit modal (`public/shared.js`) — there's no separate
+sync step to write. Add a dashboard on either page and it appears on both;
+edit "Last updated" (or anything else) from the Tracker and the Hub reflects
+it on its next load, because both pages read and write the exact same row.
+
+Every dashboard currently has exactly one owner — the one person who can
+edit it in Claude Code. For now that's Sarah Dahl for everything, including
+anything added from here on (the Owner field defaults to her when left
+blank), but it's a plain text field so a dashboard can be handed off to
+someone else later just by editing it.
 
 ## Local development
 

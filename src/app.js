@@ -31,8 +31,9 @@ function isHttpUrl(value) {
 }
 
 // Validates/normalizes a dashboard add/edit request body. Mirrors the
-// client-side checks in public/index.html — this is the version that
-// actually matters, since the client can't be trusted.
+// client-side checks in public/shared.js (the Add/Edit modal shared by
+// index.html and tracker.html) — this is the version that actually
+// matters, since the client can't be trusted.
 function parseDashboardBody(body) {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const url = typeof body.url === "string" ? body.url.trim() : "";
@@ -41,6 +42,13 @@ function parseDashboardBody(body) {
   const sitePassword = typeof body.sitePassword === "string" ? body.sitePassword.trim() : "";
   const walkthrough = typeof body.walkthrough === "string" ? body.walkthrough.trim() : "";
   const lastUpdated = typeof body.lastUpdated === "string" ? body.lastUpdated.trim() : "";
+  const nextUpdateDue = typeof body.nextUpdateDue === "string" ? body.nextUpdateDue.trim() : "";
+  const sources = typeof body.sources === "string" ? body.sources.trim() : "";
+  // Every dashboard is owned by exactly one person for now (see
+  // db.DEFAULT_OWNER) — an empty owner falls back to that rather than
+  // being stored blank, so the Tracker's Owner column is never empty for
+  // a dashboard nobody explicitly reassigned.
+  const owner = (typeof body.owner === "string" ? body.owner.trim() : "") || dashboards.DEFAULT_OWNER;
 
   if (!name || !url) return { error: "Name and URL are required." };
   if (name.length > 80) return { error: "Name must be 80 characters or fewer." };
@@ -50,12 +58,15 @@ function parseDashboardBody(body) {
   if (note.length > 80) return { error: "Note must be 80 characters or fewer." };
   if (sitePassword.length > 80) return { error: "Site password must be 80 characters or fewer." };
   if (lastUpdated.length > 40) return { error: "Last updated must be 40 characters or fewer." };
+  if (nextUpdateDue.length > 40) return { error: "Next update due must be 40 characters or fewer." };
+  if (owner.length > 80) return { error: "Owner must be 80 characters or fewer." };
+  if (sources.length > 300) return { error: "Sources must be 300 characters or fewer." };
   if (walkthrough) {
     if (walkthrough.length > 500) return { error: "Walkthrough link must be 500 characters or fewer." };
     if (!isHttpUrl(walkthrough)) return { error: "Walkthrough link must start with http:// or https://" };
   }
 
-  return { fields: { name, url, desc, note, sitePassword, walkthrough, lastUpdated } };
+  return { fields: { name, url, desc, note, sitePassword, walkthrough, lastUpdated, nextUpdateDue, owner, sources } };
 }
 
 function createApp({ staticDir }) {
