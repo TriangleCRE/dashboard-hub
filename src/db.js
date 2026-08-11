@@ -37,6 +37,10 @@ function query(text, params) {
 // once via a stable seed_key so re-running this on every cold start never
 // creates duplicates (ON CONFLICT DO NOTHING) and never overwrites edits
 // someone's since made to them.
+// Every dashboard is owned by exactly one person for now — the only one
+// who edits it in Claude Code. See the Tracker (public/tracker.html).
+const DEFAULT_OWNER = "Sarah Dahl";
+
 const SEED_DASHBOARDS = [
   {
     seedKey: "how-to-create-a-claude-dashboard",
@@ -44,8 +48,11 @@ const SEED_DASHBOARDS = [
     description: "Step-by-step guide for building your own dashboard and adding it to this hub.",
     url: "https://dashboard-guide.vercel.app/",
     lastUpdated: "Aug 5, 2026",
+    nextUpdateDue: "",
+    owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "2903",
+    sources: "",
     walkthrough: "",
     pinned: true,
   },
@@ -55,8 +62,11 @@ const SEED_DASHBOARDS = [
     description: "Quarterly performance reports across the property portfolio.",
     url: "https://triangle-property-reports.vercel.app/",
     lastUpdated: "Jul 31, 2026",
+    nextUpdateDue: "",
+    owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "2903",
+    sources: "",
     walkthrough: "",
   },
   {
@@ -65,8 +75,11 @@ const SEED_DASHBOARDS = [
     description: "Tracker for deals moving through the acquisition pipeline.",
     url: "https://triangle-deal-pipeline-tracker.vercel.app/",
     lastUpdated: "Aug 4, 2026",
+    nextUpdateDue: "",
+    owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
+    sources: "",
     walkthrough: "",
   },
   {
@@ -75,8 +88,11 @@ const SEED_DASHBOARDS = [
     description: "Water billing tool for the Hoy property.",
     url: "https://hoy-water-tool.vercel.app/",
     lastUpdated: "Jul 31, 2026",
+    nextUpdateDue: "",
+    owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
+    sources: "",
     walkthrough: "",
   },
   {
@@ -85,8 +101,11 @@ const SEED_DASHBOARDS = [
     description: "Billing tool for the Harbor Freight tenant.",
     url: "https://harbor-freight-billing-tool.vercel.app/",
     lastUpdated: "Jul 31, 2026",
+    nextUpdateDue: "",
+    owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
+    sources: "",
     walkthrough: "",
   },
   {
@@ -95,8 +114,11 @@ const SEED_DASHBOARDS = [
     description: "Water billing tracker for 211/213 N Lewis. Built by Oliver.",
     url: "https://211-213-water-tracker.vercel.app/",
     lastUpdated: "Jul 2, 2026",
+    nextUpdateDue: "",
+    owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
+    sources: "",
     walkthrough: "https://www.loom.com/share/63547bf0c9954445af19ed6249d1b6d6",
   },
   {
@@ -105,8 +127,11 @@ const SEED_DASHBOARDS = [
     description: "Loan database for Triangle Investment Group.",
     url: "https://triangle-loan-database.vercel.app/",
     lastUpdated: "Jul 7, 2026",
+    nextUpdateDue: "",
+    owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
+    sources: "",
     walkthrough: "",
   },
 ];
@@ -146,6 +171,27 @@ function ensureSchema() {
       await query(`
         ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS site_password TEXT NOT NULL DEFAULT '';
       `);
+      // Tracker columns (public/tracker.html): who owns/edits the dashboard
+      // in Claude Code, when it's next due for an update, and what sources
+      // feed that update. Same "add if missing" pattern as the columns
+      // above, so older deployments pick them up on their next cold start.
+      await query(`
+        ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS owner TEXT NOT NULL DEFAULT '';
+      `);
+      await query(`
+        ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS next_update_due TEXT NOT NULL DEFAULT '';
+      `);
+      await query(`
+        ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS sources TEXT NOT NULL DEFAULT '';
+      `);
+      // Every dashboard added before the Tracker existed has no owner yet.
+      // They're all Sarah's for now (see DEFAULT_OWNER above) — backfill
+      // rather than leaving the Tracker's Owner column blank for everything
+      // that predates it. Never overwrites a real (non-empty) owner.
+      await query(
+        `UPDATE dashboards SET owner = $1 WHERE owner = ''`,
+        [DEFAULT_OWNER]
+      );
       // "Site password" used to just be a convention for the freeform Note
       // field (e.g. note = "Site password: 2903"). Now that it's its own
       // column, pull any note already written that way into site_password
@@ -164,10 +210,10 @@ function ensureSchema() {
       for (let i = 0; i < SEED_DASHBOARDS.length; i++) {
         const s = SEED_DASHBOARDS[i];
         await query(
-          `INSERT INTO dashboards (seed_key, name, url, description, note, site_password, walkthrough, last_updated, sort_order, pinned)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          `INSERT INTO dashboards (seed_key, name, url, description, note, site_password, walkthrough, last_updated, next_update_due, owner, sources, sort_order, pinned)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
            ON CONFLICT (seed_key) DO NOTHING`,
-          [s.seedKey, s.name, s.url, s.description, s.note, s.sitePassword, s.walkthrough, s.lastUpdated, i, Boolean(s.pinned)]
+          [s.seedKey, s.name, s.url, s.description, s.note, s.sitePassword, s.walkthrough, s.lastUpdated, s.nextUpdateDue, s.owner, s.sources, i, Boolean(s.pinned)]
         );
       }
     })().catch((err) => {
@@ -190,6 +236,9 @@ function rowToDashboard(row) {
     sitePassword: row.site_password,
     walkthrough: row.walkthrough,
     lastUpdated: row.last_updated,
+    nextUpdateDue: row.next_update_due,
+    owner: row.owner,
+    sources: row.sources,
     pinned: row.pinned,
   };
 }
@@ -212,10 +261,10 @@ async function createDashboard(fields) {
   );
   const nextOrder = orderRows[0].next_order;
   const { rows } = await query(
-    `INSERT INTO dashboards (name, url, description, note, site_password, walkthrough, last_updated, sort_order)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO dashboards (name, url, description, note, site_password, walkthrough, last_updated, next_update_due, owner, sources, sort_order)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *`,
-    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, nextOrder]
+    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, fields.nextUpdateDue, fields.owner, fields.sources, nextOrder]
   );
   return rowToDashboard(rows[0]);
 }
@@ -224,10 +273,10 @@ async function updateDashboard(id, fields) {
   await ensureSchema();
   const { rows } = await query(
     `UPDATE dashboards
-     SET name = $1, url = $2, description = $3, note = $4, site_password = $5, walkthrough = $6, last_updated = $7, updated_at = now()
-     WHERE id = $8
+     SET name = $1, url = $2, description = $3, note = $4, site_password = $5, walkthrough = $6, last_updated = $7, next_update_due = $8, owner = $9, sources = $10, updated_at = now()
+     WHERE id = $11
      RETURNING *`,
-    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, id]
+    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, fields.nextUpdateDue, fields.owner, fields.sources, id]
   );
   return rows[0] ? rowToDashboard(rows[0]) : null;
 }
@@ -243,4 +292,5 @@ module.exports = {
   createDashboard,
   updateDashboard,
   deleteDashboard,
+  DEFAULT_OWNER,
 };
