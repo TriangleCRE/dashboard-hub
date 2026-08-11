@@ -6,6 +6,7 @@
 // of living in one browser's localStorage.
 
 const { Pool } = require("pg");
+const crypto = require("node:crypto");
 
 let pool;
 function getPool() {
@@ -33,6 +34,26 @@ function query(text, params) {
   return getPool().query(text, params);
 }
 
+// Matches the "Aug 5, 2026" style every other date in this app is stored
+// as, so a checklist-derived date reads the same as a hand-typed one and
+// Date.parse() on the client can still parse it back out.
+function formatShortDate(date) {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// A dashboard's "next update due" is derived from its checklist once it
+// has one (see the checklist functions below): the soonest due date among
+// items not yet checked off. Items with no due date, or a due date that
+// isn't a real date (both allowed — a checklist can track "as needed"
+// items too), just don't count toward this.
+function computeNextUpdateDue(checklist) {
+  const upcoming = (checklist || [])
+    .filter((item) => !item.done && item.dueDate && !isNaN(Date.parse(item.dueDate)))
+    .map((item) => Date.parse(item.dueDate))
+    .sort((a, b) => a - b);
+  return upcoming.length ? formatShortDate(new Date(upcoming[0])) : "";
+}
+
 // The dashboards this hub shipped with, before it had a database. Seeded
 // once via a stable seed_key so re-running this on every cold start never
 // creates duplicates (ON CONFLICT DO NOTHING) and never overwrites edits
@@ -41,6 +62,38 @@ function query(text, params) {
 // who edits it in Claude Code. See the Tracker (public/tracker.html).
 const DEFAULT_OWNER = "Sarah Dahl";
 
+// One-time checklist seed for "Quarterly Property Reports" (see the
+// migration in ensureSchema below) — the monthly/quarterly/annual pull
+// schedule from the "Property Reports Update Timeline" doc. Monthly items
+// are due the 15th of the following month (pushed to the next Monday when
+// the 15th lands on a weekend); quarterly/annual dates come straight from
+// that doc rather than being derived, since they don't follow a fixed
+// day-count rule.
+function checklistItem(label, dueDate) {
+  return { id: crypto.randomUUID(), label, dueDate, done: false, completedDate: "" };
+}
+
+const PROPERTY_REPORTS_CHECKLIST = [
+  checklistItem("Create/update the Aug 2026 report", "2026-09-15"),
+  checklistItem("Create/update the Sep 2026 report", "2026-10-15"),
+  checklistItem("Create/update the Oct 2026 report", "2026-11-16"),
+  checklistItem("Create/update the Nov 2026 report", "2026-12-15"),
+  checklistItem("Create/update the Dec 2026 report", "2027-01-15"),
+  checklistItem("Create/update the Jan 2027 report", "2027-02-15"),
+  checklistItem("Create/update the Feb 2027 report", "2027-03-15"),
+  checklistItem("Create/update the Mar 2027 report", "2027-04-15"),
+  checklistItem("Create/update the Apr 2027 report", "2027-05-17"),
+  checklistItem("Create/update the May 2027 report", "2027-06-15"),
+  checklistItem("Create/update the Jun 2027 report", "2027-07-15"),
+  checklistItem("Create/update the Jul 2027 report", "2027-08-16"),
+  checklistItem("Create/update the Q3 2026 (Jul–Sep) report", "2026-10-19"),
+  checklistItem("Create/update the Q4 2026 (Oct–Dec) report", "2027-01-27"),
+  checklistItem("Create/update the Q1 2027 (Jan–Mar) report", "2027-04-19"),
+  checklistItem("Create/update the Q2 2027 (Apr–Jun) report", "2027-07-19"),
+  checklistItem("Create/update the Q3 2027 (Jul–Sep) report", "2027-10-18"),
+  checklistItem("Create/update the FY2026 (Jan–Dec) report", "2027-02-24"),
+];
+
 const SEED_DASHBOARDS = [
   {
     seedKey: "how-to-create-a-claude-dashboard",
@@ -48,7 +101,7 @@ const SEED_DASHBOARDS = [
     description: "Step-by-step guide for building your own dashboard and adding it to this hub.",
     url: "https://dashboard-guide.vercel.app/",
     lastUpdated: "Aug 5, 2026",
-    nextUpdateDue: "",
+    nextUpdateDue: "As needed",
     owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "2903",
@@ -62,12 +115,13 @@ const SEED_DASHBOARDS = [
     description: "Quarterly performance reports across the property portfolio.",
     url: "https://triangle-property-reports.vercel.app/",
     lastUpdated: "Jul 31, 2026",
-    nextUpdateDue: "",
+    nextUpdateDue: computeNextUpdateDue(PROPERTY_REPORTS_CHECKLIST),
     owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "2903",
     sources: "",
     walkthrough: "",
+    checklist: PROPERTY_REPORTS_CHECKLIST,
   },
   {
     seedKey: "deal-pipeline",
@@ -75,7 +129,7 @@ const SEED_DASHBOARDS = [
     description: "Tracker for deals moving through the acquisition pipeline.",
     url: "https://triangle-deal-pipeline-tracker.vercel.app/",
     lastUpdated: "Aug 4, 2026",
-    nextUpdateDue: "",
+    nextUpdateDue: "As needed",
     owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
@@ -115,7 +169,7 @@ const SEED_DASHBOARDS = [
     url: "https://211-213-water-tracker.vercel.app/",
     lastUpdated: "Jul 2, 2026",
     nextUpdateDue: "",
-    owner: DEFAULT_OWNER,
+    owner: "Oliver Dahl",
     note: "",
     sitePassword: "",
     sources: "",
@@ -127,7 +181,7 @@ const SEED_DASHBOARDS = [
     description: "Loan database for Triangle Investment Group.",
     url: "https://triangle-loan-database.vercel.app/",
     lastUpdated: "Jul 7, 2026",
-    nextUpdateDue: "",
+    nextUpdateDue: "As needed",
     owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
@@ -184,6 +238,14 @@ function ensureSchema() {
       await query(`
         ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS sources TEXT NOT NULL DEFAULT '';
       `);
+      // The update checklist (public/tracker.html): a list of {id, label,
+      // dueDate, done, completedDate} items you check off as you do each
+      // update. Checking one off bumps last_updated and recomputes
+      // next_update_due from whatever's left — see the checklist functions
+      // below.
+      await query(`
+        ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS checklist JSONB NOT NULL DEFAULT '[]'::jsonb;
+      `);
       // Every dashboard added before the Tracker existed has no owner yet.
       // They're all Sarah's for now (see DEFAULT_OWNER above) — backfill
       // rather than leaving the Tracker's Owner column blank for everything
@@ -191,6 +253,34 @@ function ensureSchema() {
       await query(
         `UPDATE dashboards SET owner = $1 WHERE owner = ''`,
         [DEFAULT_OWNER]
+      );
+      // The three migrations below only matter for a database that was
+      // seeded before these values existed (a production deploy that
+      // already has these 7 rows under their old defaults) — a genuinely
+      // fresh install gets all of this straight from SEED_DASHBOARDS below
+      // instead, so these are no-ops there. Each is guarded on the column
+      // still holding whatever the old default was, so none of them ever
+      // overwrite a reassignment made since (from here, or from the
+      // Tracker).
+
+      // Oliver Dahl owns the N Lewis billing tool, not the default owner.
+      await query(
+        `UPDATE dashboards SET owner = 'Oliver Dahl' WHERE seed_key = '211-213-n-lewis-billing-tool' AND owner = $1`,
+        [DEFAULT_OWNER]
+      );
+      // These dashboards aren't on any schedule — they're updated as new
+      // deals/properties/tenants/loans show up, not on a cadence.
+      await query(`
+        UPDATE dashboards SET next_update_due = 'As needed'
+        WHERE seed_key IN ('deal-pipeline', 'loan-database', 'how-to-create-a-claude-dashboard')
+          AND next_update_due = '';
+      `);
+      // The monthly/quarterly/annual pull schedule for Quarterly Property
+      // Reports (see PROPERTY_REPORTS_CHECKLIST above).
+      await query(
+        `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
+         WHERE seed_key = 'quarterly-property-reports' AND checklist = '[]'::jsonb`,
+        [JSON.stringify(PROPERTY_REPORTS_CHECKLIST), computeNextUpdateDue(PROPERTY_REPORTS_CHECKLIST)]
       );
       // "Site password" used to just be a convention for the freeform Note
       // field (e.g. note = "Site password: 2903"). Now that it's its own
@@ -210,10 +300,10 @@ function ensureSchema() {
       for (let i = 0; i < SEED_DASHBOARDS.length; i++) {
         const s = SEED_DASHBOARDS[i];
         await query(
-          `INSERT INTO dashboards (seed_key, name, url, description, note, site_password, walkthrough, last_updated, next_update_due, owner, sources, sort_order, pinned)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          `INSERT INTO dashboards (seed_key, name, url, description, note, site_password, walkthrough, last_updated, next_update_due, owner, sources, checklist, sort_order, pinned)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14)
            ON CONFLICT (seed_key) DO NOTHING`,
-          [s.seedKey, s.name, s.url, s.description, s.note, s.sitePassword, s.walkthrough, s.lastUpdated, s.nextUpdateDue, s.owner, s.sources, i, Boolean(s.pinned)]
+          [s.seedKey, s.name, s.url, s.description, s.note, s.sitePassword, s.walkthrough, s.lastUpdated, s.nextUpdateDue, s.owner, s.sources, JSON.stringify(s.checklist || []), i, Boolean(s.pinned)]
         );
       }
     })().catch((err) => {
@@ -239,6 +329,7 @@ function rowToDashboard(row) {
     nextUpdateDue: row.next_update_due,
     owner: row.owner,
     sources: row.sources,
+    checklist: row.checklist || [],
     pinned: row.pinned,
   };
 }
@@ -287,10 +378,97 @@ async function deleteDashboard(id) {
   return rowCount > 0;
 }
 
+/* =========================================================================
+   UPDATE CHECKLIST
+   -------------------------------------------------------------------------
+   A dashboard's checklist is just a JSON array on its row, not a separate
+   table — there's no reporting/joining need that would justify one, and
+   keeping it on the row means a single RETURNING * still hands back the
+   whole dashboard after every change. Every mutation re-reads the current
+   array, edits it in JS, and recomputes next_update_due from what's left
+   (see computeNextUpdateDue above) before writing back.
+   ========================================================================= */
+
+async function getChecklist(id) {
+  const { rows } = await query(`SELECT checklist FROM dashboards WHERE id = $1`, [id]);
+  return rows[0] ? rows[0].checklist || [] : null;
+}
+
+// Writes back a dashboard's whole checklist plus the next_update_due that
+// falls out of it. `justCompleted` also bumps last_updated to today — only
+// checking an item off counts as "the update happened"; adding, editing,
+// or deleting an item, or un-checking one, doesn't.
+async function persistChecklist(id, checklist, justCompleted) {
+  const nextUpdateDue = computeNextUpdateDue(checklist);
+  const { rows } = justCompleted
+    ? await query(
+        `UPDATE dashboards
+         SET checklist = $1::jsonb, next_update_due = $2, last_updated = $3, updated_at = now()
+         WHERE id = $4
+         RETURNING *`,
+        [JSON.stringify(checklist), nextUpdateDue, formatShortDate(new Date()), id]
+      )
+    : await query(
+        `UPDATE dashboards
+         SET checklist = $1::jsonb, next_update_due = $2, updated_at = now()
+         WHERE id = $3
+         RETURNING *`,
+        [JSON.stringify(checklist), nextUpdateDue, id]
+      );
+  return rows[0] ? rowToDashboard(rows[0]) : null;
+}
+
+async function addChecklistItem(id, { label, dueDate }) {
+  await ensureSchema();
+  const checklist = await getChecklist(id);
+  if (checklist === null) return null;
+  if (checklist.length >= 200) {
+    throw new Error("This dashboard's checklist is full (200 items) — remove some before adding more.");
+  }
+  const item = { id: crypto.randomUUID(), label, dueDate, done: false, completedDate: "" };
+  return persistChecklist(id, [...checklist, item]);
+}
+
+// `patch` may include any of label/dueDate/done. Checking an item that's
+// already checked off (or vice versa) is a no-op on last_updated — only an
+// actual done:false -> true transition counts as "the update happened".
+// An unknown itemId is quietly a no-op rather than a 404: the checklist is
+// still returned as-is, since there's nothing useful to do with a stale id
+// besides leave everything unchanged.
+async function updateChecklistItem(id, itemId, patch) {
+  await ensureSchema();
+  const checklist = await getChecklist(id);
+  if (checklist === null) return null;
+  let justCompleted = false;
+  const updated = checklist.map((item) => {
+    if (item.id !== itemId) return item;
+    const next = { ...item };
+    if (typeof patch.label === "string") next.label = patch.label;
+    if (typeof patch.dueDate === "string") next.dueDate = patch.dueDate;
+    if (typeof patch.done === "boolean" && patch.done !== item.done) {
+      next.done = patch.done;
+      next.completedDate = patch.done ? formatShortDate(new Date()) : "";
+      justCompleted = patch.done;
+    }
+    return next;
+  });
+  return persistChecklist(id, updated, justCompleted);
+}
+
+async function deleteChecklistItem(id, itemId) {
+  await ensureSchema();
+  const checklist = await getChecklist(id);
+  if (checklist === null) return null;
+  return persistChecklist(id, checklist.filter((item) => item.id !== itemId));
+}
+
 module.exports = {
   listDashboards,
   createDashboard,
   updateDashboard,
   deleteDashboard,
+  addChecklistItem,
+  updateChecklistItem,
+  deleteChecklistItem,
   DEFAULT_OWNER,
 };

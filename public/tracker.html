@@ -22,7 +22,6 @@
   table.tracker tbody tr:last-child td{border-bottom:none}
   table.tracker tbody tr:hover{background:#fafbfb}
   table.tracker td.col-name{white-space:normal;min-width:200px}
-  table.tracker td.col-desc{white-space:normal;color:var(--ink-soft);min-width:220px;max-width:320px}
   .row-name{display:flex;align-items:center;gap:8px;font-weight:700}
   .row-name .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
   .row-open{
@@ -86,6 +85,47 @@
   .add-sources-btn:hover{border-color:var(--green);background:rgba(51,166,63,.08)}
   .edit-sources-btn{margin-left:7px}
   td.col-sources{white-space:normal}
+
+  /* ---------- UPDATE CHECKLIST ---------- */
+  td.col-due{white-space:normal;min-width:200px}
+  .next-task-title{font-size:12.5px;font-weight:600;color:var(--ink);margin:0 0 5px;line-height:1.35}
+  .checklist-toggle{
+    display:flex;align-items:center;gap:5px;margin-top:7px;
+    font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink-soft);
+    background:transparent;border:none;padding:0;cursor:pointer;
+  }
+  .checklist-toggle:hover{color:var(--green-dark)}
+  .checklist-toggle .chev{display:inline-block;font-size:10px;transition:transform .12s}
+  .checklist-toggle.expanded .chev{transform:rotate(90deg)}
+  tr.checklist-row td{background:#fafbfb;padding:0}
+  .checklist-panel{padding:16px 20px 18px;max-width:640px}
+  .checklist-items{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:10px}
+  .checklist-item{display:flex;align-items:flex-start;gap:10px;font-size:13px}
+  .checklist-item input[type="checkbox"]{margin-top:3px;width:16px;height:16px;accent-color:var(--green);cursor:pointer;flex:none}
+  .ci-body{flex:1 1 auto;min-width:0}
+  .ci-label{color:var(--ink);font-weight:600}
+  .checklist-item.done .ci-label{color:var(--ink-soft);text-decoration:line-through;font-weight:400}
+  .ci-meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+  .ci-delete{
+    flex:none;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
+    font-size:13px;line-height:1;padding:3px 6px;border-radius:6px;
+  }
+  .ci-delete:hover{color:var(--red);background:var(--red-tint)}
+  .checklist-empty{font-size:13px;color:var(--ink-soft);margin:0 0 14px}
+  .checklist-add-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:12px;border-top:1px solid var(--line)}
+  .checklist-add-row .ci-new-label{flex:1 1 220px;min-width:180px}
+  .checklist-add-row .ci-new-due{flex:0 0 150px}
+  .checklist-add-row input{
+    font-family:inherit;font-size:13px;color:var(--ink);border:1.5px solid var(--line);
+    border-radius:8px;padding:8px 10px;background:#fff;
+  }
+  .checklist-add-row input:focus{outline:none;border-color:var(--green)}
+  .checklist-add-row button{
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;color:#fff;
+    background:var(--green);border:none;border-radius:8px;padding:8px 14px;
+  }
+  .checklist-add-row button:hover{background:var(--green-dark)}
+  .checklist-panel .cell-error{margin-top:10px}
 </style>
 </head>
 <body>
@@ -116,9 +156,11 @@
         Every dashboard on the Hub, in one table: when it was last updated, when it's next
         due, who's the one person that can edit it in Claude Code, and — hover or tab to the
         <strong>ⓘ</strong> — the sources needed to update it. Click any Owner, Last updated,
-        Next update due, or Sources value to edit it right here — no form to open. Adding a
-        dashboard here (or on the Hub) adds it to both; any edit made here updates the Hub too,
-        since both pages read and write the exact same record.
+        Next update due, or Sources value to edit it right here — no form to open. Under
+        "Next update due," open the checklist to see (or add) the specific reports/tasks due
+        and check one off as you finish it — that automatically updates "Last updated" too.
+        Adding a dashboard here (or on the Hub) adds it to both; any edit made here updates the
+        Hub too, since both pages read and write the exact same record.
       </p>
       <div class="toolbar">
         <div class="search-wrap">
@@ -138,7 +180,6 @@
             <option value="all">All dashboards</option>
             <option value="overdue">Overdue</option>
             <option value="soon">Due soon (7 days)</option>
-            <option value="pinned">Pinned only</option>
           </select>
         </div>
       </div>
@@ -163,25 +204,11 @@
           <label for="fieldUrl">URL</label>
           <input type="text" id="fieldUrl" placeholder="https://" maxlength="500" required />
         </div>
-        <div class="field">
-          <label for="fieldLastUpdated">Last updated <span class="hint">(optional — any format, e.g. "Aug 5, 2026")</span></label>
-          <input type="text" id="fieldLastUpdated" maxlength="40" />
-        </div>
-        <div class="field">
-          <label for="fieldNextUpdateDue">Next update due <span class="hint">(optional — any format, e.g. "Sep 1, 2026")</span></label>
-          <input type="text" id="fieldNextUpdateDue" maxlength="40" />
-        </div>
-        <div class="field">
-          <label for="fieldOwner">Owner <span class="hint">(the one person who edits this in Claude Code)</span></label>
-          <input type="text" id="fieldOwner" maxlength="80" />
-        </div>
+
+        <div class="modal-section-label">Shown on the Hub</div>
         <div class="field">
           <label for="fieldDesc">Description <span class="hint">(optional)</span></label>
           <textarea id="fieldDesc" maxlength="200"></textarea>
-        </div>
-        <div class="field">
-          <label for="fieldSources">Sources to update it <span class="hint">(optional — shown as a hover tip on the Tracker)</span></label>
-          <textarea id="fieldSources" maxlength="300" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase"></textarea>
         </div>
         <div class="field">
           <label for="fieldSitePassword">Site password <span class="hint">(optional)</span></label>
@@ -195,6 +222,25 @@
           <label for="fieldWalkthrough">Walkthrough link <span class="hint">(optional)</span></label>
           <input type="text" id="fieldWalkthrough" placeholder="https://" maxlength="500" />
         </div>
+
+        <div class="modal-section-label">Tracked on the Tracker</div>
+        <div class="field">
+          <label for="fieldLastUpdated">Last updated <span class="hint">(optional — any format, e.g. "Aug 5, 2026")</span></label>
+          <input type="text" id="fieldLastUpdated" maxlength="40" />
+        </div>
+        <div class="field">
+          <label for="fieldNextUpdateDue">Next update due <span class="hint">(optional — any format, e.g. "Sep 1, 2026", or "As needed")</span></label>
+          <input type="text" id="fieldNextUpdateDue" maxlength="40" />
+        </div>
+        <div class="field">
+          <label for="fieldOwner">Owner <span class="hint">(the one person who edits this in Claude Code)</span></label>
+          <input type="text" id="fieldOwner" maxlength="80" />
+        </div>
+        <div class="field">
+          <label for="fieldSources">Sources to update it <span class="hint">(optional — shown as a hover tip on the Tracker)</span></label>
+          <textarea id="fieldSources" maxlength="300" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase"></textarea>
+        </div>
+
         <div class="modal-actions" id="modalActionsRow">
           <button type="button" class="btn-remove" id="deleteDashboard" hidden>Delete Dashboard</button>
           <a class="btn btn-ghost" id="cancelAddDashboard" href="javascript:void(0)">Cancel</a>
@@ -237,6 +283,11 @@
   const sortSelect = document.getElementById("sortSelect");
   const filterSelect = document.getElementById("filterSelect");
 
+  // Which dashboards' checklist panels are currently expanded — pure UI
+  // state, not persisted. Kept outside renderTable so it survives the full
+  // re-render every checklist action triggers (see applyFiltersAndRender).
+  const expandedChecklists = new Set();
+
   function matchesSearch(site, query){
     if (!query) return true;
     const haystack = [site.name, site.desc, site.owner, site.sources].filter(Boolean).join(" \n ").toLowerCase();
@@ -266,7 +317,6 @@
     const query = searchInput.value.trim().toLowerCase();
     const filter = filterSelect.value;
     return sites.filter(s => {
-      if (filter === "pinned" && !s.pinned) return false;
       if (filter === "overdue" || filter === "soon") {
         const days = dueInDays(s);
         if (days === null) return false;
@@ -315,7 +365,10 @@
         cmp = (a, b) => dueTimeForSort(a) - dueTimeForSort(b) || byNameAsc(a, b);
         break;
     }
-    sorted.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || cmp(a, b));
+    // Unlike the Hub, the Tracker doesn't put pinned dashboards first —
+    // "start here" is a Hub-only concept, so every dashboard sorts by
+    // whichever mode is selected, with no special-casing.
+    sorted.sort(cmp);
     return sorted;
   }
 
@@ -347,9 +400,48 @@
     return s.lastUpdated ? esc(s.lastUpdated) : `<span class="muted">Add date</span>`;
   }
 
+  // ISO "YYYY-MM-DD" dates (what <input type="date"> gives back, and what
+  // the seeded checklist items use) are parsed by Date.parse() as UTC
+  // midnight. Formatting that back out in the viewer's local timezone can
+  // shift it a day either way near midnight — parsing AND formatting both
+  // in UTC keeps a date typed as "Sep 15" showing as "Sep 15" everywhere.
+  function parseChecklistDate(dueDate){
+    if (!dueDate) return null;
+    const t = Date.parse(dueDate);
+    return isNaN(t) ? null : t;
+  }
+
+  function formatChecklistDate(dueDate){
+    const t = parseChecklistDate(dueDate);
+    if (t === null) return dueDate ? esc(dueDate) : "No due date";
+    return esc(new Date(t).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }));
+  }
+
+  // The soonest not-yet-done checklist item with a real due date, if any.
+  // The server keeps site.nextUpdateDue in sync with this same item (see
+  // db.computeNextUpdateDue), so the status pill's color/urgency already
+  // matches this item's date — this just adds what the item actually is.
+  function nextChecklistItem(s){
+    const open = (s.checklist || [])
+      .filter(item => !item.done && parseChecklistDate(item.dueDate) !== null)
+      .sort((a, b) => parseChecklistDate(a.dueDate) - parseChecklistDate(b.dueDate));
+    return open[0] || null;
+  }
+
   function nextUpdateDueDisplayHtml(s){
     const status = dueStatus(s);
-    return `<span class="status-pill ${status.cls}">${status.label}</span>`;
+    const pill = `<span class="status-pill ${status.cls}">${status.label}</span>`;
+    const next = nextChecklistItem(s);
+    const title = next ? `<div class="next-task-title">${esc(next.label)}</div>` : "";
+    const total = (s.checklist || []).length;
+    const openCount = (s.checklist || []).filter(item => !item.done).length;
+    const expanded = expandedChecklists.has(String(s.id));
+    const toggleLabel = total ? `${openCount} open · ${total - openCount} done` : "+ Add checklist";
+    const toggle = `
+      <button type="button" class="checklist-toggle${expanded ? " expanded" : ""}" data-checklist-toggle="${s.id}">
+        <span class="chev">▸</span>${esc(toggleLabel)}
+      </button>`;
+    return `${title}${pill}${toggle}`;
   }
 
   function sourcesDisplayHtml(s){
@@ -373,25 +465,39 @@
     nextUpdateDue: { label: "next update due date", maxLength: 40, display: nextUpdateDueDisplayHtml },
   };
 
+  // Once a dashboard has a checklist, "Next update due" is derived from it
+  // (the server recomputes it on every checklist change) rather than being
+  // hand-typed — so that cell stops being click-to-edit and just shows the
+  // toggle. Dashboards without a checklist yet keep the plain freeform
+  // editable cell (e.g. for "As needed", or a hand-typed date).
+  function dueCellHtml(s){
+    const inner = `${nextUpdateDueDisplayHtml(s)}${(s.checklist || []).length ? "" : `<span class="editable-hint">✎</span>`}`;
+    return (s.checklist || []).length
+      ? `<td class="col-due" data-id="${s.id}">${inner}</td>`
+      : `<td class="col-due editable" data-field="nextUpdateDue" data-id="${s.id}" tabindex="0">${inner}</td>`;
+  }
+
   function renderTable(sites){
     const rows = sites.map(s => {
-      const pinnedBadge = s.pinned ? `<span class="pinned-badge" style="margin-right:6px">★</span>` : "";
-      return `
+      const mainRow = `
         <tr>
           <td class="col-name">
-            <div class="row-name">${pinnedBadge}<span class="dot"></span>${esc(s.name)}
+            <div class="row-name"><span class="dot"></span>${esc(s.name)}
               <a class="row-open" href="${esc(s.url)}" target="_blank" rel="noopener" title="Open ${esc(s.name)}">↗</a>
             </div>
           </td>
-          <td class="col-desc">${esc(s.desc || "")}</td>
           <td class="editable" data-field="owner" data-id="${s.id}" tabindex="0">${ownerDisplayHtml(s)}<span class="editable-hint">✎</span></td>
           <td class="editable" data-field="lastUpdated" data-id="${s.id}" tabindex="0">${lastUpdatedDisplayHtml(s)}<span class="editable-hint">✎</span></td>
-          <td class="editable" data-field="nextUpdateDue" data-id="${s.id}" tabindex="0">${nextUpdateDueDisplayHtml(s)}<span class="editable-hint">✎</span></td>
+          ${dueCellHtml(s)}
           <td class="col-sources">${sourcesDisplayHtml(s)}</td>
           <td class="col-actions">
             <button type="button" class="icon-btn" data-edit-id="${s.id}" title="Edit all fields" aria-label="Edit all fields for ${esc(s.name)}">✎</button>
           </td>
         </tr>`;
+      const panelRow = expandedChecklists.has(String(s.id))
+        ? `<tr class="checklist-row"><td colspan="6">${renderChecklistPanel(s)}</td></tr>`
+        : "";
+      return mainRow + panelRow;
     }).join("");
 
     tableHost.innerHTML = `
@@ -400,7 +506,6 @@
           <thead>
             <tr>
               <th>Dashboard</th>
-              <th>Description</th>
               <th>Owner (Claude Code editor)</th>
               <th>Last updated</th>
               <th>Next update due</th>
@@ -425,7 +530,13 @@
         const site = sites.find(s => String(s.id) === cell.getAttribute("data-id"));
         if (site) beginFieldEdit(cell, site, cell.getAttribute("data-field"));
       };
-      cell.addEventListener("click", openThisCell);
+      // The "next update due" cell can contain the checklist toggle (when
+      // the dashboard has no checklist yet) — clicking that should expand
+      // the checklist, not fall through to edit mode on the cell.
+      cell.addEventListener("click", (e) => {
+        if (e.target.closest("[data-checklist-toggle]")) return;
+        openThisCell();
+      });
       cell.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openThisCell(); }
       });
@@ -437,6 +548,18 @@
         if (site) beginSourcesEdit(btn.closest("td.col-sources"), site);
       });
     });
+
+    wireChecklistControls();
+  }
+
+  // Merges a fresh dashboard record from the API into both the object a
+  // caller already has a reference to and the allSites cache, so every
+  // view derived from either (search, sort, the status pill, the checklist
+  // panel) sees the change without a full re-fetch.
+  function applyUpdatedSite(updated){
+    const cached = allSites.find(s => String(s.id) === String(updated.id));
+    if (cached) Object.assign(cached, updated);
+    return cached || updated;
   }
 
   /* =========================================================================
@@ -461,8 +584,7 @@
       body: JSON.stringify(record),
     });
     Object.assign(site, updated);
-    const cached = allSites.find(s => String(s.id) === String(site.id));
-    if (cached) Object.assign(cached, updated);
+    applyUpdatedSite(updated);
     return updated;
   }
 
@@ -550,6 +672,134 @@
         if (existingError) existingError.remove();
         cell.querySelector(".cell-edit-actions").insertAdjacentHTML("beforebegin", `<div class="cell-error">Couldn't save: ${esc(err.message)}</div>`);
       }
+    });
+  }
+
+  /* =========================================================================
+     UPDATE CHECKLIST
+     -------------------------------------------------------------------------
+     Each dashboard's checklist lives at /api/dashboards/:id/checklist —
+     add/toggle/delete one item at a time rather than round-tripping the
+     whole record through PUT. Checking an item off is what bumps "Last
+     updated" server-side (db.updateChecklistItem); everything here just
+     reflects whatever the server hands back.
+     ========================================================================= */
+  function showChecklistError(dashboardId, message){
+    const el = tableHost.querySelector(`[data-checklist-error="${dashboardId}"]`);
+    if (el) { el.textContent = message; el.hidden = false; }
+  }
+
+  function renderChecklistPanel(s){
+    const items = (s.checklist || []).slice().sort((a, b) => {
+      const ta = parseChecklistDate(a.dueDate);
+      const tb = parseChecklistDate(b.dueDate);
+      if (ta === null && tb === null) return 0;
+      if (ta === null) return 1;
+      if (tb === null) return -1;
+      return ta - tb;
+    });
+
+    const itemsHtml = items.length
+      ? `<ul class="checklist-items">${items.map(item => `
+          <li class="checklist-item${item.done ? " done" : ""}">
+            <input type="checkbox" ${item.done ? "checked" : ""} data-checklist-check="${item.id}" data-dashboard-id="${s.id}" aria-label="Mark “${esc(item.label)}” as ${item.done ? "not done" : "done"}" />
+            <div class="ci-body">
+              <div class="ci-label">${esc(item.label)}</div>
+              <div class="ci-meta">${item.done ? `Done · ${esc(item.completedDate || "")}` : `Due ${formatChecklistDate(item.dueDate)}`}</div>
+            </div>
+            <button type="button" class="ci-delete" data-checklist-delete="${item.id}" data-dashboard-id="${s.id}" aria-label="Remove ${esc(item.label)}" title="Remove">✕</button>
+          </li>`).join("")}</ul>`
+      : `<p class="checklist-empty">No checklist items yet — add the next report/task and its due date below.</p>`;
+
+    return `
+      <div class="checklist-panel">
+        ${itemsHtml}
+        <div class="checklist-add-row">
+          <input type="text" class="ci-new-label" maxlength="140" placeholder="e.g. Create/update the Aug 2026 report" aria-label="New checklist item label" />
+          <input type="date" class="ci-new-due" aria-label="New checklist item due date" />
+          <button type="button" class="ci-add-btn" data-checklist-add="${s.id}">+ Add</button>
+        </div>
+        <p class="cell-error" data-checklist-error="${s.id}" hidden></p>
+      </div>`;
+  }
+
+  function wireChecklistControls(){
+    tableHost.querySelectorAll("[data-checklist-toggle]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = String(btn.getAttribute("data-checklist-toggle"));
+        if (expandedChecklists.has(id)) expandedChecklists.delete(id);
+        else expandedChecklists.add(id);
+        applyFiltersAndRender();
+      });
+    });
+
+    tableHost.querySelectorAll("[data-checklist-check]").forEach(cb => {
+      cb.addEventListener("change", async () => {
+        const dashboardId = cb.getAttribute("data-dashboard-id");
+        const itemId = cb.getAttribute("data-checklist-check");
+        const desiredDone = cb.checked;
+        cb.disabled = true;
+        try {
+          const updated = await apiRequest(`${API_BASE}/${dashboardId}/checklist/${itemId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ done: desiredDone }),
+          });
+          applyUpdatedSite(updated);
+          applyFiltersAndRender();
+        } catch (err) {
+          cb.checked = !desiredDone;
+          cb.disabled = false;
+          showChecklistError(dashboardId, `Couldn't save: ${err.message}`);
+        }
+      });
+    });
+
+    tableHost.querySelectorAll("[data-checklist-delete]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const dashboardId = btn.getAttribute("data-dashboard-id");
+        const itemId = btn.getAttribute("data-checklist-delete");
+        if (!window.confirm("Remove this checklist item? This can't be undone.")) return;
+        btn.disabled = true;
+        try {
+          const updated = await apiRequest(`${API_BASE}/${dashboardId}/checklist/${itemId}`, { method: "DELETE" });
+          applyUpdatedSite(updated);
+          applyFiltersAndRender();
+        } catch (err) {
+          btn.disabled = false;
+          showChecklistError(dashboardId, `Couldn't remove item: ${err.message}`);
+        }
+      });
+    });
+
+    tableHost.querySelectorAll("[data-checklist-add]").forEach(btn => {
+      const row = btn.closest(".checklist-add-row");
+      const labelInput = row.querySelector(".ci-new-label");
+      const dueInput = row.querySelector(".ci-new-due");
+      const dashboardId = btn.getAttribute("data-checklist-add");
+
+      const submit = async () => {
+        const label = labelInput.value.trim();
+        if (!label) { showChecklistError(dashboardId, "Give the checklist item a label first."); labelInput.focus(); return; }
+        btn.disabled = true;
+        try {
+          const updated = await apiRequest(`${API_BASE}/${dashboardId}/checklist`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ label, dueDate: dueInput.value }),
+          });
+          applyUpdatedSite(updated);
+          applyFiltersAndRender();
+        } catch (err) {
+          btn.disabled = false;
+          showChecklistError(dashboardId, `Couldn't add item: ${err.message}`);
+        }
+      };
+
+      btn.addEventListener("click", submit);
+      labelInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } });
+      dueInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } });
     });
   }
 
