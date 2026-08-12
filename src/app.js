@@ -60,7 +60,7 @@ function parseDashboardBody(body) {
   if (lastUpdated.length > 40) return { error: "Last updated must be 40 characters or fewer." };
   if (nextUpdateDue.length > 40) return { error: "Next update due must be 40 characters or fewer." };
   if (owner.length > 80) return { error: "Owner must be 80 characters or fewer." };
-  if (sources.length > 300) return { error: "Sources must be 300 characters or fewer." };
+  if (sources.length > 3000) return { error: "Sources must be 3,000 characters or fewer." };
   if (walkthrough) {
     if (walkthrough.length > 500) return { error: "Walkthrough link must be 500 characters or fewer." };
     if (!isHttpUrl(walkthrough)) return { error: "Walkthrough link must start with http:// or https://" };

@@ -245,7 +245,7 @@
         </div>
         <div class="field">
           <label for="fieldSources">Sources to update it <span class="hint">(optional — shown as a hover tip on the Tracker)</span></label>
-          <textarea id="fieldSources" maxlength="300" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase"></textarea>
+          <textarea id="fieldSources" maxlength="3000" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase"></textarea>
         </div>
 
         <div class="modal-actions" id="modalActionsRow">
@@ -464,12 +464,22 @@
     return `${title}${pill}${toggle}`;
   }
 
+  // Escapes first, then wraps http(s) URLs in the now-escaped text with
+  // real anchor tags — safe because a URL never contains the characters
+  // esc() escapes, so matching against the escaped text still finds every
+  // URL intact (an "&" inside e.g. a query string just reads as "&amp;",
+  // which browsers decode back to "&" wherever it ends up, including
+  // inside the href itself).
+  function linkifySources(text){
+    return esc(text).replace(/(https?:\/\/[^\s<>"]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  }
+
   function sourcesDisplayHtml(s){
     if (s.sources) {
       return `
         <span class="info-pop">
           <button type="button" class="info-icon" aria-label="Sources needed to update ${esc(s.name)}">ⓘ</button>
-          <span class="info-pop-bubble">${esc(s.sources)}</span>
+          <span class="info-pop-bubble">${linkifySources(s.sources)}</span>
         </span>
         <button type="button" class="icon-btn edit-sources-btn" data-edit-sources-id="${s.id}" title="Edit sources" aria-label="Edit sources for ${esc(s.name)}">✎</button>`;
     }
@@ -526,7 +536,7 @@
           <thead>
             <tr>
               <th>Dashboard</th>
-              <th>Owner (Claude Code editor)</th>
+              <th>Owner</th>
               <th>Last updated</th>
               <th>Next update due</th>
               <th>Sources</th>
@@ -654,7 +664,7 @@
     const currentValue = site.sources || "";
     cell.classList.add("editing");
     cell.innerHTML = `
-      <textarea class="cell-input" maxlength="300" aria-label="Edit sources for ${esc(site.name)}" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase">${esc(currentValue)}</textarea>
+      <textarea class="cell-input" maxlength="3000" aria-label="Edit sources for ${esc(site.name)}" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase">${esc(currentValue)}</textarea>
       <div class="cell-edit-actions">
         <button type="button" class="cell-cancel">Cancel</button>
         <button type="button" class="cell-save primary">Save</button>

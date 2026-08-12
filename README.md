@@ -115,19 +115,29 @@ needed" also gets its own subtly different status-pill color
 (`.status-asneeded`) rather than reading as the same grey as "Not set" —
 it's a deliberate choice, not a missing value.
 
-Quarterly Property Reports, Property Basis Tracker, and Utility Usage
-Tracker each have their pull schedule seeded in as a checklist —
-`PROPERTY_REPORTS_CHECKLIST`, `PROPERTY_BASIS_TRACKER_CHECKLIST`, and
-`UTILITY_TRACKER_CHECKLIST` in `src/db.js`, respectively. The first two
-are both due the 15th of the following month (pushed to the next Monday
-on a weekend); Utility Usage Tracker gets 12 months seeded on the same
-monthly cadence since its source doc didn't give a fixed list of future
-dates — add more from the Tracker as any of these three run out, since
-none of them regenerate on their own.
+Quarterly Property Reports, Property Basis Tracker, Utility Usage Tracker,
+and CAM Insurance Taxes Tracker each have their pull schedule seeded in as
+a checklist — `PROPERTY_REPORTS_CHECKLIST`, `PROPERTY_BASIS_TRACKER_CHECKLIST`,
+`UTILITY_TRACKER_CHECKLIST`, and `CAM_TRACKER_CHECKLIST` in `src/db.js`,
+respectively. The first two are both due the 15th of the following month
+(pushed to the next Monday on a weekend); Utility Usage Tracker gets 12
+months seeded on the same monthly cadence since its source doc didn't give
+a fixed list of future dates; CAM Insurance Taxes Tracker so far just has
+its one 2026 item. Add more from the Tracker as any of these run out,
+since none of them regenerate on their own.
+
+Sources supports up to 3,000 characters and can hold several lines with
+multiple links — the hover popover on the Tracker turns any `http(s)://`
+URL in it into a clickable link (`linkifySources()` in `public/tracker.html`),
+so a Sources note doesn't have to stay short to include real links to the
+GIS sites, Yardi Breeze, Google Drive/Sheets, etc. that a dashboard's
+update actually draws from. Quarterly Property Reports, Utility Usage
+Tracker, and CAM Insurance Taxes Tracker all have theirs filled in this
+way.
 
 Dashboards added through the Hub (rather than shipped in `SEED_DASHBOARDS`)
 have no `seed_key`, so a migration seeding one of these has to match on
-something else stable — name, for the three checklists above and for the
+something else stable — name, for the checklists/sources above and for the
 "As needed" dashboards not already in `SEED_DASHBOARDS`.
 
 ## Local development
