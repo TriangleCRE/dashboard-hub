@@ -57,8 +57,8 @@ There are two pages over the same underlying dashboard list:
   dashboard.
 - **`/tracker` — the Tracker.** A table-of-contents view for keeping the
   hub itself maintained: when each dashboard was last updated, when it's
-  next due, who owns it, and what sources feed an update (hover or tab to
-  the ⓘ to see them).
+  next due, who owns it, and what sources feed an update (click the
+  "Sources" button to see them).
 
 Both pages are just different renderings of the same `/api/dashboards` data
 and share one Add/Edit modal (`public/shared.js`) — there's no separate
@@ -128,8 +128,19 @@ CAM, Taxes, & Insurance so far just has its one 2026 item. Add more from
 the Tracker as any of these run out, since none of them regenerate on
 their own.
 
+Hoy Billing Tool, Harbor Freight Billing Tool, and 211/213 N Lewis Billing
+Tool also have their bill cycles seeded in as a checklist —
+`HOY_BILLING_CHECKLIST`, `HARBOR_FREIGHT_BILLING_CHECKLIST`, and
+`N_LEWIS_BILLING_CHECKLIST` in `src/db.js`. Hoy and N Lewis are billed
+bimonthly and share the same schedule (7 items, May '26–Jul '26 through
+May '27–Jul '27, each due the 1st of the month after the bill period
+ends); Harbor Freight is billed monthly (14 items, May '26–Jun '26 through
+Jun '27–Jul '27, same "due the 1st of the following month" rule). Unlike
+the checklists above, these three ship in `SEED_DASHBOARDS` with a stable
+`seed_key`, so their migrations match on that instead of on name.
+
 Sources supports up to 3,000 characters and can hold several lines with
-multiple links — the hover popover on the Tracker turns any `http(s)://`
+multiple links — the Sources popover on the Tracker turns any `http(s)://`
 URL in it into a clickable link (`linkifySources()` in `public/tracker.html`),
 so a Sources note doesn't have to stay short to include real links to the
 GIS sites, Yardi Breeze, Google Drive/Sheets, etc. that a dashboard's
@@ -137,8 +148,12 @@ update actually draws from. Write `[a short label](https://...)` and the
 label becomes the link's visible text instead of the raw URL — handy for
 the long, parameter-heavy GIS links in particular; a bare `https://...`
 still links too, just with the URL itself as the visible text. Quarterly
-Property Reports, Deal Pipeline, Loan Database, Utility Usage Tracker, and
-CAM, Taxes, & Insurance all have theirs filled in this way.
+Property Reports, Deal Pipeline, Loan Database, Utility Usage Tracker,
+CAM, Taxes, & Insurance, Property Basis Record, Hoy Billing Tool, Harbor
+Freight Billing Tool, and 211/213 N Lewis Billing Tool all have theirs
+filled in this way. Click the "Sources" button (next to the pencil icon
+that edits the list) to open the popover — it's click-to-toggle, not
+hover, so it stays open while you scroll to a link and click it.
 
 Dashboards added through the Hub (rather than shipped in `SEED_DASHBOARDS`)
 have no `seed_key`, so a migration seeding one of these has to match on

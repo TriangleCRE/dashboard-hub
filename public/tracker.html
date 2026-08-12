@@ -88,6 +88,12 @@
     padding:4px 11px;cursor:pointer;
   }
   .add-sources-btn:hover{border-color:var(--green);background:rgba(51,166,63,.08)}
+  .sources-btn{
+    font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);
+    background:#fff;border:1.5px solid var(--line);border-radius:20px;
+    padding:5px 12px;cursor:pointer;white-space:nowrap;
+  }
+  .sources-btn:hover, .sources-btn[aria-expanded="true"]{border-color:var(--green);color:var(--green-dark)}
   .edit-sources-btn{margin-left:7px}
   td.col-sources{white-space:normal}
 
@@ -497,7 +503,7 @@
   function sourcesDisplayHtml(s){
     if (s.sources) {
       return `
-        <button type="button" class="info-icon" data-sources-trigger="${s.id}" aria-label="Sources needed to update ${esc(s.name)}">ⓘ</button>
+        <button type="button" class="sources-btn" data-sources-trigger="${s.id}" aria-haspopup="true" aria-expanded="false" aria-label="Sources needed to update ${esc(s.name)}">Sources</button>
         <button type="button" class="icon-btn edit-sources-btn" data-edit-sources-id="${s.id}" title="Edit sources" aria-label="Edit sources for ${esc(s.name)}">✎</button>`;
     }
     return `<button type="button" class="add-sources-btn" data-edit-sources-id="${s.id}">+ Add</button>`;
@@ -506,30 +512,20 @@
   /* =========================================================================
      SOURCES POPOVER
      -------------------------------------------------------------------------
-     Appended to <body> and positioned with getBoundingClientRect() rather
-     than living next to the icon in the table and floating there via
-     CSS :hover — a plain CSS bubble inside the table gets clipped by the
-     table's own horizontal scroll container, and centering it on the icon
-     runs it off the right edge of the screen for a column this close to
-     the edge. Only one popover is ever open; a short delay on hide lets
-     the mouse travel from the icon into the popover itself (to click a
-     link) without it closing first.
+     Click the "Sources" button to open it, click it again (or anywhere
+     else, or press Escape) to close it — not a hover tooltip. Appended to
+     <body> and positioned with getBoundingClientRect() rather than living
+     next to the button in the table and floating there via CSS — a plain
+     CSS bubble inside the table gets clipped by the table's own horizontal
+     scroll container, and centering it on the button runs it off the
+     right edge of the screen for a column this close to the edge. Only
+     one popover is ever open at a time.
      ========================================================================= */
   let openSourcesPopover = null; // { trigger, panel }
-  let sourcesHideTimer = null;
-
-  function cancelSourcesHide(){
-    if (sourcesHideTimer) { clearTimeout(sourcesHideTimer); sourcesHideTimer = null; }
-  }
-
-  function scheduleSourcesHide(){
-    cancelSourcesHide();
-    sourcesHideTimer = setTimeout(closeSourcesPopover, 150);
-  }
 
   function closeSourcesPopover(){
-    cancelSourcesHide();
     if (openSourcesPopover) {
+      openSourcesPopover.trigger.setAttribute("aria-expanded", "false");
       openSourcesPopover.panel.remove();
       openSourcesPopover = null;
     }
@@ -563,21 +559,22 @@
     panel.classList.toggle("below", below);
   }
 
-  function openSourcesPopoverFor(trigger, html){
-    cancelSourcesHide();
-    if (openSourcesPopover && openSourcesPopover.trigger === trigger) return;
+  // Clicking an already-open trigger's own button is a close, not a
+  // re-open — closeSourcesPopover() runs first either way so there's never
+  // more than one popover on screen.
+  function toggleSourcesPopover(trigger, html){
+    const wasOpenForThisTrigger = openSourcesPopover && openSourcesPopover.trigger === trigger;
     closeSourcesPopover();
+    if (wasOpenForThisTrigger) return;
 
     const panel = document.createElement("div");
     panel.className = "sources-popover";
-    panel.setAttribute("role", "tooltip");
     panel.innerHTML = html;
-    panel.addEventListener("mouseenter", cancelSourcesHide);
-    panel.addEventListener("mouseleave", scheduleSourcesHide);
     document.body.appendChild(panel);
     positionSourcesPopover(trigger, panel);
     requestAnimationFrame(() => panel.classList.add("visible"));
 
+    trigger.setAttribute("aria-expanded", "true");
     openSourcesPopover = { trigger, panel };
   }
 
@@ -586,10 +583,10 @@
       const site = sites.find(s => String(s.id) === trigger.getAttribute("data-sources-trigger"));
       if (!site) return;
       const html = sourcesPopoverHtml(site.sources);
-      trigger.addEventListener("mouseenter", () => openSourcesPopoverFor(trigger, html));
-      trigger.addEventListener("mouseleave", scheduleSourcesHide);
-      trigger.addEventListener("focus", () => openSourcesPopoverFor(trigger, html));
-      trigger.addEventListener("blur", scheduleSourcesHide);
+      trigger.addEventListener("click", (e) => {
+        e.stopPropagation(); // don't let the document click-outside handler below immediately close what this just opened
+        toggleSourcesPopover(trigger, html);
+      });
     });
   }
 
@@ -601,13 +598,15 @@
   window.addEventListener("scroll", closeSourcesPopover, true);
   window.addEventListener("resize", closeSourcesPopover);
 
-  // Belt-and-suspenders: a click that isn't on the popover or its trigger
-  // (e.g. the pencil icon right next to it) closes it immediately rather
-  // than waiting on the hover-out delay.
+  // Click anywhere else, or Escape, closes it — the standard "press
+  // outside a popover to dismiss it" pattern.
   document.addEventListener("click", (e) => {
     if (!openSourcesPopover) return;
-    if (openSourcesPopover.panel.contains(e.target) || openSourcesPopover.trigger.contains(e.target)) return;
+    if (openSourcesPopover.panel.contains(e.target)) return;
     closeSourcesPopover();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && openSourcesPopover) closeSourcesPopover();
   });
 
   // The three single-line fields editable right in the table. Each entry's

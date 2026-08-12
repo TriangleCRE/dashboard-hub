@@ -234,6 +234,68 @@ const LOAN_DATABASE_SOURCES = [
   "[Loan Documents folder](https://drive.google.com/drive/folders/1pGPaJ8q-qMXJfu_R2xMnVYNcr55RDNPZ?usp=sharing)",
 ].join("\n");
 
+// Bimonthly billing cycle for Hoy Billing Tool and 211/213 N Lewis Billing
+// Tool — both on the exact same cadence (a bill covering a 2-month period
+// gets updated on the 1st of the month after that period ends). Neither
+// of these dates need a weekend-shift rule; they're given as fixed dates,
+// not derived.
+function bimonthlyBillingChecklist(){
+  return [
+    checklistItem("Create/update the May '26 – Jul '26 bill", "2026-08-01"),
+    checklistItem("Create/update the Jul '26 – Sep '26 bill", "2026-10-01"),
+    checklistItem("Create/update the Sep '26 – Nov '26 bill", "2026-12-01"),
+    checklistItem("Create/update the Nov '26 – Jan '27 bill", "2027-02-01"),
+    checklistItem("Create/update the Jan '27 – Mar '27 bill", "2027-04-01"),
+    checklistItem("Create/update the Mar '27 – May '27 bill", "2027-06-01"),
+    checklistItem("Create/update the May '27 – Jul '27 bill", "2027-08-01"),
+  ];
+}
+const HOY_BILLING_CHECKLIST = bimonthlyBillingChecklist();
+const N_LEWIS_BILLING_CHECKLIST = bimonthlyBillingChecklist();
+
+// Monthly billing cycle for Harbor Freight Billing Tool — a bill covering
+// one month gets updated on the 1st of the following month.
+const HARBOR_FREIGHT_BILLING_CHECKLIST = [
+  checklistItem("Create/update the May '26 – Jun '26 bill", "2026-07-01"),
+  checklistItem("Create/update the Jun '26 – Jul '26 bill", "2026-08-01"),
+  checklistItem("Create/update the Jul '26 – Aug '26 bill", "2026-09-01"),
+  checklistItem("Create/update the Aug '26 – Sep '26 bill", "2026-10-01"),
+  checklistItem("Create/update the Sep '26 – Oct '26 bill", "2026-11-01"),
+  checklistItem("Create/update the Oct '26 – Nov '26 bill", "2026-12-01"),
+  checklistItem("Create/update the Nov '26 – Dec '26 bill", "2027-01-01"),
+  checklistItem("Create/update the Dec '26 – Jan '27 bill", "2027-02-01"),
+  checklistItem("Create/update the Jan '27 – Feb '27 bill", "2027-03-01"),
+  checklistItem("Create/update the Feb '27 – Mar '27 bill", "2027-04-01"),
+  checklistItem("Create/update the Mar '27 – Apr '27 bill", "2027-05-01"),
+  checklistItem("Create/update the Apr '27 – May '27 bill", "2027-06-01"),
+  checklistItem("Create/update the May '27 – Jun '27 bill", "2027-07-01"),
+  checklistItem("Create/update the Jun '27 – Jul '27 bill", "2027-08-01"),
+];
+
+const N_LEWIS_BILLING_SOURCES = [
+  "Bill Invoices — log into 211 and 213 N Lewis St on [City of Staunton Utility Billing](https://services.ci.staunton.va.us/mss/citizens/UtilityBilling/Default.aspx). See the dashboard's \"Step-by-step guide\" to log in, or watch the walkthrough video.",
+  "Submeter Usage Report (CSV) — [Next Century Meters](https://app.nextcenturymeters.com/login)",
+].join("\n");
+
+const HOY_BILLING_SOURCES = [
+  "Bill Invoices — [Yardi Breeze](https://100115409.breeze.cafe/content/#/app/dashboard), images attached to invoices for City of Staunton Utilities (vendor #v0001913), OR log into [City of Staunton Utility Billing](https://services.ci.staunton.va.us/mss/citizens/UtilityBilling/Default.aspx)",
+  "Water meter readings from [Prism](https://connect.buildingengines.com/)",
+].join("\n");
+
+const HARBOR_FREIGHT_BILLING_SOURCES = [
+  "Bill Invoices (source TBD)",
+  "Meter Readings (source TBD)",
+].join("\n");
+
+// Property Basis Record was added through the Hub (see the checklist
+// migration further down) — no checklist-seeding Sources constant existed
+// for it yet, so this is a plain addition rather than a rewrite of an
+// earlier value.
+const PROPERTY_BASIS_RECORD_SOURCES = [
+  "Monthly Balance Sheet — [Yardi Breeze](https://100115409.breeze.cafe/content/#/app/dashboard)",
+  "[V2_Property_Basis_Tracker_May_2026.xlsx](https://docs.google.com/spreadsheets/d/1EQEqtbrKFnqpw_l0ZD2j_j0dVmWwBT1T/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
+].join("\n");
+
 const SEED_DASHBOARDS = [
   {
     seedKey: "how-to-create-a-claude-dashboard",
@@ -282,12 +344,13 @@ const SEED_DASHBOARDS = [
     description: "Water billing tool for the Hoy property.",
     url: "https://hoy-water-tool.vercel.app/",
     lastUpdated: "Jul 31, 2026",
-    nextUpdateDue: "",
+    nextUpdateDue: computeNextUpdateDue(HOY_BILLING_CHECKLIST),
     owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
-    sources: "",
+    sources: HOY_BILLING_SOURCES,
     walkthrough: "",
+    checklist: HOY_BILLING_CHECKLIST,
   },
   {
     seedKey: "harbor-freight-billing-tool",
@@ -295,12 +358,13 @@ const SEED_DASHBOARDS = [
     description: "Billing tool for the Harbor Freight tenant.",
     url: "https://harbor-freight-billing-tool.vercel.app/",
     lastUpdated: "Jul 31, 2026",
-    nextUpdateDue: "",
+    nextUpdateDue: computeNextUpdateDue(HARBOR_FREIGHT_BILLING_CHECKLIST),
     owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
-    sources: "",
+    sources: HARBOR_FREIGHT_BILLING_SOURCES,
     walkthrough: "",
+    checklist: HARBOR_FREIGHT_BILLING_CHECKLIST,
   },
   {
     seedKey: "211-213-n-lewis-billing-tool",
@@ -308,12 +372,13 @@ const SEED_DASHBOARDS = [
     description: "Water billing tracker for 211/213 N Lewis. Built by Oliver.",
     url: "https://211-213-water-tracker.vercel.app/",
     lastUpdated: "Jul 2, 2026",
-    nextUpdateDue: "",
+    nextUpdateDue: computeNextUpdateDue(N_LEWIS_BILLING_CHECKLIST),
     owner: "Oliver Dahl",
     note: "",
     sitePassword: "",
-    sources: "",
+    sources: N_LEWIS_BILLING_SOURCES,
     walkthrough: "https://www.loom.com/share/63547bf0c9954445af19ed6249d1b6d6",
+    checklist: N_LEWIS_BILLING_CHECKLIST,
   },
   {
     seedKey: "loan-database",
@@ -569,6 +634,47 @@ function ensureSchema() {
          WHERE name IN ('Property Basis Record', 'Property Basis Tracker', 'Triangle Property Basis Tracker')
            AND checklist = '[]'::jsonb`,
         [JSON.stringify(PROPERTY_BASIS_TRACKER_CHECKLIST), computeNextUpdateDue(PROPERTY_BASIS_TRACKER_CHECKLIST)]
+      );
+      // Sources for Property Basis Record (see PROPERTY_BASIS_RECORD_SOURCES
+      // above) — separate migration from the checklist one, guarded
+      // independently on Sources still being blank, same reasoning as the
+      // Quarterly Property Reports Sources migration further up.
+      await query(
+        `UPDATE dashboards SET sources = $1
+         WHERE name IN ('Property Basis Record', 'Property Basis Tracker', 'Triangle Property Basis Tracker')
+           AND sources = ''`,
+        [PROPERTY_BASIS_RECORD_SOURCES]
+      );
+      // Billing-cycle checklists for the three billing tools, all of which
+      // have been in SEED_DASHBOARDS with a stable seed_key since the
+      // start — no name-guessing needed here, unlike the dashboards added
+      // through the Hub above.
+      await query(
+        `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
+         WHERE seed_key = 'hoy-billing-tool' AND checklist = '[]'::jsonb`,
+        [JSON.stringify(HOY_BILLING_CHECKLIST), computeNextUpdateDue(HOY_BILLING_CHECKLIST)]
+      );
+      await query(
+        `UPDATE dashboards SET sources = $1 WHERE seed_key = 'hoy-billing-tool' AND sources = ''`,
+        [HOY_BILLING_SOURCES]
+      );
+      await query(
+        `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
+         WHERE seed_key = 'harbor-freight-billing-tool' AND checklist = '[]'::jsonb`,
+        [JSON.stringify(HARBOR_FREIGHT_BILLING_CHECKLIST), computeNextUpdateDue(HARBOR_FREIGHT_BILLING_CHECKLIST)]
+      );
+      await query(
+        `UPDATE dashboards SET sources = $1 WHERE seed_key = 'harbor-freight-billing-tool' AND sources = ''`,
+        [HARBOR_FREIGHT_BILLING_SOURCES]
+      );
+      await query(
+        `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
+         WHERE seed_key = '211-213-n-lewis-billing-tool' AND checklist = '[]'::jsonb`,
+        [JSON.stringify(N_LEWIS_BILLING_CHECKLIST), computeNextUpdateDue(N_LEWIS_BILLING_CHECKLIST)]
+      );
+      await query(
+        `UPDATE dashboards SET sources = $1 WHERE seed_key = '211-213-n-lewis-billing-tool' AND sources = ''`,
+        [N_LEWIS_BILLING_SOURCES]
       );
       // The 2026 checklist item (and Sources) for CAM, Taxes, & Insurance
       // — same "match by name, seed once" pattern. Same story as Property
