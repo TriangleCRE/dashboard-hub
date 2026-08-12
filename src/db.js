@@ -119,18 +119,31 @@ const UTILITY_TRACKER_CHECKLIST = [
   checklistItem("Update Jul 2027 usage", "2027-08-16"),
 ];
 
-// Superseded by the fuller UTILITY_TRACKER_SOURCES below — kept only so
-// the migration in ensureSchema can find rows still holding this exact
-// text and replace it, without touching a sources note anyone's written
-// by hand since (see migrateUtilityTrackerSources).
+// Superseded by OLD_UTILITY_TRACKER_SOURCES_V2, then by the bracket-linked
+// UTILITY_TRACKER_SOURCES below — kept only so the fix-up migrations in
+// ensureSchema can find rows still holding this exact text and replace
+// them, without touching a sources note anyone's written by hand since.
 const OLD_UTILITY_TRACKER_SOURCES =
   "Yardi Breeze vendor ledgers — Dominion VA electric (#10456), Columbia Gas (#10380), " +
   "SVEC Coop electric (#10922). Update via Claude Code/Cowork with " +
   "Utility_Usage_Tracker.xlsx attached, Chrome logged into Yardi. Run after the " +
   "~8th–10th of the month once bills post.";
 
-const UTILITY_TRACKER_SOURCES = [
+// Superseded in turn by the bracket-linked UTILITY_TRACKER_SOURCES below —
+// same "kept for the fix-up migration to match against" reason as above.
+const OLD_UTILITY_TRACKER_SOURCES_V2 = [
   "Yardi Breeze https://100115409.breeze.cafe/content/#/app/dashboard — images attached to invoices from:",
+  "Electricity: Dominion Energy VA (#10456), Dominion Energy NC (v0000553), Harrisonburg Electric Commission (v0000813), SVEC (#10922)",
+  "Natural gas: Columbia Gas of Virginia (#10380), City of Charlottesville (v0000367)",
+  "Water: City of Staunton Utilities (v0001913)",
+  "Combined electric+gas+water: City of Danville Utilities (v0002097)",
+].join("\n");
+
+// Links use "[label](url)" — see linkifySources() in public/tracker.html,
+// which turns that into a real anchor with the label as the link text
+// (falling back to linking a bare URL as-is when it isn't wrapped that way).
+const UTILITY_TRACKER_SOURCES = [
+  "[Yardi Breeze](https://100115409.breeze.cafe/content/#/app/dashboard) — images attached to invoices from:",
   "Electricity: Dominion Energy VA (#10456), Dominion Energy NC (v0000553), Harrisonburg Electric Commission (v0000813), SVEC (#10922)",
   "Natural gas: Columbia Gas of Virginia (#10380), City of Charlottesville (v0000367)",
   "Water: City of Staunton Utilities (v0001913)",
@@ -163,13 +176,24 @@ const PROPERTY_BASIS_TRACKER_CHECKLIST = [
   checklistItem("Create/update the Aug 2027 Basis Record", "2027-09-15"),
 ];
 
-const PROPERTY_REPORTS_SOURCES = [
+// Superseded by the bracket-linked PROPERTY_REPORTS_SOURCES below — kept
+// for the fix-up migration to match against.
+const OLD_PROPERTY_REPORTS_SOURCES = [
   "GIS — Staunton https://gis.vgsi.com/stauntonva/Search.aspx ; Charlottesville https://gisweb.charlottesville.org/GISViewer/ ; Harrisonburg https://gis.vgsi.com/harrisonburgva/Search.aspx ; Danville https://experience.arcgis.com/experience/31951e30986b44a1aa066c3b2f636a1f/page/Map#data_s=id%3AdataSource_9-19a5fd2bf82-layer-12%3A20662 ; Albemarle County https://gis.albemarle.org/gisviewer/#data_s=id%3AdataSource_4-19833a845ac-layer-12-19833a84680-layer-14%3A42039%2Cid%3AdataSource_4-19cb6994ab7-layer-36~dataSource_4-19cb6a26d2a-layer-37~dataSource_4-19cb6b1c343-layer-39~dataSource_4-19ce96fbfac-layer-42~dataSource_4-19cb6ead2d6-layer-102%3A50638&widget_10=active_datasource_id:dataSource_4,center:-8735076.871299999%2C4592059.696100004%2C102100,scale:4534.736842100625,rotation:0,viewpoint:%7B%22rotation%22%3A0%2C%22scale%22%3A4534.736842100625%2C%22targetGeometry%22%3A%7B%22spatialReference%22%3A%7B%22latestWkid%22%3A3857%2C%22wkid%22%3A102100%7D%2C%22x%22%3A-8735076.871299999%2C%22y%22%3A4592059.696100004%7D%7D ; Augusta https://gis.vgsi.com/augustava/Search.aspx",
   "Yardi Pull Prompt (on dashboard) https://triangle-property-reports.vercel.app/",
   "Yardi Breeze — Income Statement (Account Tree = Property Report); AR Analytics – Aging Summary; Tenancy Schedule; Property list/picker; Dashboard (portfolio-level Open AR / Vacancy) https://100115409.breeze.cafe/content/#/app/dashboard",
   "Loan Database https://triangle-loan-database.vercel.app/ (dashboard) — V1_Triangle_Loan_Database_260707.xlsx https://docs.google.com/spreadsheets/d/1m597i2XhPTuMPWaDR2k39BnevTZnvGN2/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true",
   "Lease information (PDFs exported from Yardi Breeze tenant info) https://drive.google.com/drive/folders/1PtLPxWVypvKgLZVuw4q0EYoaqKQtM0ix?usp=sharing",
   "Download a completed report from the dashboard for reference when creating a new one https://triangle-property-reports.vercel.app/",
+].join("\n");
+
+const PROPERTY_REPORTS_SOURCES = [
+  "GIS — [Staunton](https://gis.vgsi.com/stauntonva/Search.aspx) ; [Charlottesville](https://gisweb.charlottesville.org/GISViewer/) ; [Harrisonburg](https://gis.vgsi.com/harrisonburgva/Search.aspx) ; [Danville](https://experience.arcgis.com/experience/31951e30986b44a1aa066c3b2f636a1f/page/Map#data_s=id%3AdataSource_9-19a5fd2bf82-layer-12%3A20662) ; [Albemarle County](https://gis.albemarle.org/gisviewer/#data_s=id%3AdataSource_4-19833a845ac-layer-12-19833a84680-layer-14%3A42039%2Cid%3AdataSource_4-19cb6994ab7-layer-36~dataSource_4-19cb6a26d2a-layer-37~dataSource_4-19cb6b1c343-layer-39~dataSource_4-19ce96fbfac-layer-42~dataSource_4-19cb6ead2d6-layer-102%3A50638&widget_10=active_datasource_id:dataSource_4,center:-8735076.871299999%2C4592059.696100004%2C102100,scale:4534.736842100625,rotation:0,viewpoint:%7B%22rotation%22%3A0%2C%22scale%22%3A4534.736842100625%2C%22targetGeometry%22%3A%7B%22spatialReference%22%3A%7B%22latestWkid%22%3A3857%2C%22wkid%22%3A102100%7D%2C%22x%22%3A-8735076.871299999%2C%22y%22%3A4592059.696100004%7D%7D) ; [Augusta](https://gis.vgsi.com/augustava/Search.aspx)",
+  "[Yardi Pull Prompt](https://triangle-property-reports.vercel.app/) (on dashboard)",
+  "[Yardi Breeze](https://100115409.breeze.cafe/content/#/app/dashboard) — Income Statement (Account Tree = Property Report); AR Analytics – Aging Summary; Tenancy Schedule; Property list/picker; Dashboard (portfolio-level Open AR / Vacancy)",
+  "[Loan Database](https://triangle-loan-database.vercel.app/) (dashboard) — [V1_Triangle_Loan_Database_260707.xlsx](https://docs.google.com/spreadsheets/d/1m597i2XhPTuMPWaDR2k39BnevTZnvGN2/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
+  "[Lease information](https://drive.google.com/drive/folders/1PtLPxWVypvKgLZVuw4q0EYoaqKQtM0ix?usp=sharing) (PDFs exported from Yardi Breeze tenant info)",
+  "[Download a completed report](https://triangle-property-reports.vercel.app/) from the dashboard for reference when creating a new one",
 ].join("\n");
 
 // One-time checklist + sources seed for "CAM, Taxes, & Insurance" — added
@@ -184,9 +208,30 @@ const CAM_TRACKER_CHECKLIST = [
   checklistItem("Update the 2026 CAM, Taxes, & Insurance tracker", "2027-02-24"),
 ];
 
-const CAM_TRACKER_SOURCES = [
+// Superseded by the bracket-linked CAM_TRACKER_SOURCES below — kept for
+// the fix-up migration to match against.
+const OLD_CAM_TRACKER_SOURCES = [
   "Template/structure: CAM_per_SF_Example.xlsx https://docs.google.com/spreadsheets/d/135TaNpidcR-kiefz1Damp43PpfSUPO7s/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true",
   "Yardi Breeze https://100115409.breeze.cafe/content/#/app/dashboard — \"Annual Statement\" report (Book = Cash); \"Property Directory\" report",
+].join("\n");
+
+const CAM_TRACKER_SOURCES = [
+  "Template/structure: [CAM_per_SF_Example.xlsx](https://docs.google.com/spreadsheets/d/135TaNpidcR-kiefz1Damp43PpfSUPO7s/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
+  "[Yardi Breeze](https://100115409.breeze.cafe/content/#/app/dashboard) — \"Annual Statement\" report (Book = Cash); \"Property Directory\" report",
+].join("\n");
+
+const DEAL_PIPELINE_SOURCES = [
+  "GIS — [Staunton](https://gis.vgsi.com/stauntonva/Search.aspx) ; [Charlottesville](https://gisweb.charlottesville.org/GISViewer/) ; [Harrisonburg](https://gis.vgsi.com/harrisonburgva/Search.aspx) ; [Danville](https://experience.arcgis.com/experience/31951e30986b44a1aa066c3b2f636a1f/page/Map#data_s=id%3AdataSource_9-19a5fd2bf82-layer-12%3A20662) ; [Albemarle County](https://gis.albemarle.org/gisviewer/#data_s=id%3AdataSource_4-19833a845ac-layer-12-19833a84680-layer-14%3A42039%2Cid%3AdataSource_4-19cb6994ab7-layer-36~dataSource_4-19cb6a26d2a-layer-37~dataSource_4-19cb6b1c343-layer-39~dataSource_4-19ce96fbfac-layer-42~dataSource_4-19cb6ead2d6-layer-102%3A50638&widget_10=active_datasource_id:dataSource_4,center:-8735076.871299999%2C4592059.696100004%2C102100,scale:4534.736842100625,rotation:0,viewpoint:%7B%22rotation%22%3A0%2C%22scale%22%3A4534.736842100625%2C%22targetGeometry%22%3A%7B%22spatialReference%22%3A%7B%22latestWkid%22%3A3857%2C%22wkid%22%3A102100%7D%2C%22x%22%3A-8735076.871299999%2C%22y%22%3A4592059.696100004%7D%7D) ; [Augusta](https://gis.vgsi.com/augustava/Search.aspx)",
+  "Base Financial Model: [Financing_Model_v7_Base_6968_Seminole_260731.xlsx](https://docs.google.com/spreadsheets/d/128uLim1FlabbCQWVT2Z_9SJjUdn6oQ5o/edit?gid=1957072128#gid=1957072128)",
+  "[Development Scoring Sheet_Weighted.xlsx](https://docs.google.com/spreadsheets/d/1D2WGVghswwvyqmYr95IB15sMfMVyBgRo/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
+  "[Triangle Developments_Opportunities Lists](https://docs.google.com/spreadsheets/d/1T5NM7vDkwPZQSAF4auMaCFSprn1Pg-BbkbB6w9XoiLg/edit?usp=sharing)",
+].join("\n");
+
+const LOAN_DATABASE_SOURCES = [
+  "[Loan Analysis_251001.xls](https://docs.google.com/spreadsheets/d/1WHC0LCYZ-TEodNZFGSnLBIo5cZ_SnP38/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
+  "[Loan Master Spreadsheet.xlsx](https://docs.google.com/spreadsheets/d/1IuK40UXjbiwfrJDwaGhBDrdM4uAztYzY/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
+  "[V1_Triangle_Loan_Database_260707.xlsx](https://docs.google.com/spreadsheets/d/1m597i2XhPTuMPWaDR2k39BnevTZnvGN2/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
+  "[Loan Documents folder](https://drive.google.com/drive/folders/1pGPaJ8q-qMXJfu_R2xMnVYNcr55RDNPZ?usp=sharing)",
 ].join("\n");
 
 const SEED_DASHBOARDS = [
@@ -228,7 +273,7 @@ const SEED_DASHBOARDS = [
     owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
-    sources: "",
+    sources: DEAL_PIPELINE_SOURCES,
     walkthrough: "",
   },
   {
@@ -280,7 +325,7 @@ const SEED_DASHBOARDS = [
     owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
-    sources: "",
+    sources: LOAN_DATABASE_SOURCES,
     walkthrough: "",
   },
 ];
@@ -444,6 +489,29 @@ function ensureSchema() {
          WHERE seed_key = 'quarterly-property-reports' AND sources = ''`,
         [PROPERTY_REPORTS_SOURCES]
       );
+      // A production row that already got the plain-text version of these
+      // Sources (from the migration above, back before it was rewritten
+      // with "[label](url)" links — see linkifySources() in
+      // public/tracker.html) won't pick up the new version from that same
+      // migration a second time, since Sources isn't blank there anymore.
+      // Replace only an exact match on the old text.
+      await query(
+        `UPDATE dashboards SET sources = $1
+         WHERE seed_key = 'quarterly-property-reports' AND sources = $2`,
+        [PROPERTY_REPORTS_SOURCES, OLD_PROPERTY_REPORTS_SOURCES]
+      );
+      // Sources for Deal Pipeline and Loan Database (see
+      // DEAL_PIPELINE_SOURCES / LOAN_DATABASE_SOURCES above) — both have
+      // been in SEED_DASHBOARDS since the start with blank Sources, so
+      // this is a plain "fill in if still blank" like Property Reports'.
+      await query(
+        `UPDATE dashboards SET sources = $1 WHERE seed_key = 'deal-pipeline' AND sources = ''`,
+        [DEAL_PIPELINE_SOURCES]
+      );
+      await query(
+        `UPDATE dashboards SET sources = $1 WHERE seed_key = 'loan-database' AND sources = ''`,
+        [LOAN_DATABASE_SOURCES]
+      );
       // The monthly pull schedule for Utility Usage Tracker (see
       // UTILITY_TRACKER_CHECKLIST above). This dashboard was added through
       // the Hub, not seeded, so there's no seed_key to key off — match by
@@ -479,6 +547,14 @@ function ensureSchema() {
          WHERE name = 'Utility Usage Tracker' AND sources = $2`,
         [UTILITY_TRACKER_SOURCES, OLD_UTILITY_TRACKER_SOURCES]
       );
+      // ...and again for OLD_UTILITY_TRACKER_SOURCES_V2 — the plain-text
+      // version these Sources were rewritten from into "[label](url)"
+      // links, same reasoning as the Property Reports fix-up above.
+      await query(
+        `UPDATE dashboards SET sources = $1
+         WHERE name = 'Utility Usage Tracker' AND sources = $2`,
+        [UTILITY_TRACKER_SOURCES, OLD_UTILITY_TRACKER_SOURCES_V2]
+      );
       // The monthly pull schedule for Property Basis Record (see
       // PROPERTY_BASIS_TRACKER_CHECKLIST above) — same "match by name,
       // seed once" pattern as Utility Usage Tracker. Two earlier guesses
@@ -507,6 +583,16 @@ function ensureSchema() {
          WHERE name IN ('CAM, Taxes, & Insurance', 'CAM Insurance Taxes Tracker', 'CAM Insurance Tax Tracker')
            AND checklist = '[]'::jsonb`,
         [JSON.stringify(CAM_TRACKER_CHECKLIST), computeNextUpdateDue(CAM_TRACKER_CHECKLIST), CAM_TRACKER_SOURCES]
+      );
+      // A production row that already got the plain-text version of these
+      // Sources (from the migration above, before the "[label](url)"
+      // rewrite) won't pick it up a second time now that Sources isn't
+      // blank there anymore — same fix-up pattern as the others above.
+      await query(
+        `UPDATE dashboards SET sources = $1
+         WHERE name IN ('CAM, Taxes, & Insurance', 'CAM Insurance Taxes Tracker', 'CAM Insurance Tax Tracker')
+           AND sources = $2`,
+        [CAM_TRACKER_SOURCES, OLD_CAM_TRACKER_SOURCES]
       );
       // "Site password" used to just be a convention for the freeform Note
       // field (e.g. note = "Site password: 2903"). Now that it's its own
