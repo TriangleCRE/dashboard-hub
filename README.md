@@ -106,23 +106,29 @@ checklist instead. A dashboard with no checklist yet keeps the plain
 editable field (handy for "As needed" dashboards, or a quick hand-typed
 date that doesn't need a whole checklist).
 
-Deal Pipeline, Loan Database, Property Portfolio, and How to Create a
-Claude Dashboard are set to "As needed" — they get updated as new
+Deal Pipeline, Loan Database, Triangle Property Portfolio, and How to
+Create a Claude Dashboard are set to "As needed" — they get updated as new
 deals/loans/properties show up or the guide needs a tweak, not on a
-schedule. "As needed" gets its own subtly different status-pill color
+schedule. The Tracker's "Show" filter has options for both ends of that —
+"As needed" and "Has a set update date" — alongside Overdue/Due soon. "As
+needed" also gets its own subtly different status-pill color
 (`.status-asneeded`) rather than reading as the same grey as "Not set" —
-it's a deliberate choice, not a missing value. Quarterly Property Reports
-has its
-full monthly/quarterly/annual pull schedule seeded in as a checklist (see
-`PROPERTY_REPORTS_CHECKLIST` in `src/db.js`), and Utility Usage Tracker has
-the next 12 months of its monthly Yardi Breeze pull seeded in the same way
-(`UTILITY_TRACKER_CHECKLIST`) — add more from the Tracker as they come up,
-since neither checklist regenerates itself once it runs out.
+it's a deliberate choice, not a missing value.
+
+Quarterly Property Reports, Property Basis Tracker, and Utility Usage
+Tracker each have their pull schedule seeded in as a checklist —
+`PROPERTY_REPORTS_CHECKLIST`, `PROPERTY_BASIS_TRACKER_CHECKLIST`, and
+`UTILITY_TRACKER_CHECKLIST` in `src/db.js`, respectively. The first two
+are both due the 15th of the following month (pushed to the next Monday
+on a weekend); Utility Usage Tracker gets 12 months seeded on the same
+monthly cadence since its source doc didn't give a fixed list of future
+dates — add more from the Tracker as any of these three run out, since
+none of them regenerate on their own.
 
 Dashboards added through the Hub (rather than shipped in `SEED_DASHBOARDS`)
 have no `seed_key`, so a migration seeding one of these has to match on
-something else stable — Utility Usage Tracker's checklist migration
-matches on its exact name for that reason.
+something else stable — name, for the three checklists above and for the
+"As needed" dashboards not already in `SEED_DASHBOARDS`.
 
 ## Local development
 

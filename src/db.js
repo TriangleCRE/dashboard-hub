@@ -99,22 +99,24 @@ const PROPERTY_REPORTS_CHECKLIST = [
 // dashboards below there's no seed_key to match on; the migration matches
 // by name instead. Unlike Property Reports, the "Utility Tracker Update
 // Prompt" doc doesn't give a fixed list of future dates — it's an ongoing
-// monthly pull, best run after the ~8th–10th (once bills from all three
-// vendors have posted), so this seeds the next 12 months on that cadence
+// monthly pull, so this seeds the next 12 months on a monthly cadence
 // rather than a doc-given list; add more from the Tracker as they come up.
+// Due the 15th of the following month (the doc's own "best run after the
+// ~8th–10th" guidance became the 15th instead, to line up with every
+// other monthly checklist in this file).
 const UTILITY_TRACKER_CHECKLIST = [
-  checklistItem("Update Aug 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2026-09-10"),
-  checklistItem("Update Sep 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2026-10-10"),
-  checklistItem("Update Oct 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2026-11-10"),
-  checklistItem("Update Nov 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2026-12-10"),
-  checklistItem("Update Dec 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-01-10"),
-  checklistItem("Update Jan 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-02-10"),
-  checklistItem("Update Feb 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-03-10"),
-  checklistItem("Update Mar 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-04-10"),
-  checklistItem("Update Apr 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-05-10"),
-  checklistItem("Update May 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-06-10"),
-  checklistItem("Update Jun 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-07-10"),
-  checklistItem("Update Jul 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-08-10"),
+  checklistItem("Update Aug 2026 usage", "2026-09-15"),
+  checklistItem("Update Sep 2026 usage", "2026-10-15"),
+  checklistItem("Update Oct 2026 usage", "2026-11-16"),
+  checklistItem("Update Nov 2026 usage", "2026-12-15"),
+  checklistItem("Update Dec 2026 usage", "2027-01-15"),
+  checklistItem("Update Jan 2027 usage", "2027-02-15"),
+  checklistItem("Update Feb 2027 usage", "2027-03-15"),
+  checklistItem("Update Mar 2027 usage", "2027-04-15"),
+  checklistItem("Update Apr 2027 usage", "2027-05-17"),
+  checklistItem("Update May 2027 usage", "2027-06-15"),
+  checklistItem("Update Jun 2027 usage", "2027-07-15"),
+  checklistItem("Update Jul 2027 usage", "2027-08-16"),
 ];
 
 const UTILITY_TRACKER_SOURCES =
@@ -122,6 +124,29 @@ const UTILITY_TRACKER_SOURCES =
   "SVEC Coop electric (#10922). Update via Claude Code/Cowork with " +
   "Utility_Usage_Tracker.xlsx attached, Chrome logged into Yardi. Run after the " +
   "~8th–10th of the month once bills post.";
+
+// One-time checklist seed for "Property Basis Tracker" (see the migration
+// in ensureSchema below) — added through the Hub, so matched by name like
+// Utility Usage Tracker above. A given month's basis tracker is due the
+// 15th of the following month (e.g. the Jul 2026 tracker is due Aug 15,
+// 2026), pushed to the next Monday when the 15th lands on a weekend —
+// same rule and same weekday shifts as Property Reports' monthly items.
+const PROPERTY_BASIS_TRACKER_CHECKLIST = [
+  checklistItem("Create/update the Jul 2026 Basis Tracker", "2026-08-17"),
+  checklistItem("Create/update the Aug 2026 Basis Tracker", "2026-09-15"),
+  checklistItem("Create/update the Sep 2026 Basis Tracker", "2026-10-15"),
+  checklistItem("Create/update the Oct 2026 Basis Tracker", "2026-11-16"),
+  checklistItem("Create/update the Nov 2026 Basis Tracker", "2026-12-15"),
+  checklistItem("Create/update the Dec 2026 Basis Tracker", "2027-01-15"),
+  checklistItem("Create/update the Jan 2027 Basis Tracker", "2027-02-15"),
+  checklistItem("Create/update the Feb 2027 Basis Tracker", "2027-03-15"),
+  checklistItem("Create/update the Mar 2027 Basis Tracker", "2027-04-15"),
+  checklistItem("Create/update the Apr 2027 Basis Tracker", "2027-05-17"),
+  checklistItem("Create/update the May 2027 Basis Tracker", "2027-06-15"),
+  checklistItem("Create/update the Jun 2027 Basis Tracker", "2027-07-15"),
+  checklistItem("Create/update the Jul 2027 Basis Tracker", "2027-08-16"),
+  checklistItem("Create/update the Aug 2027 Basis Tracker", "2027-09-15"),
+];
 
 const SEED_DASHBOARDS = [
   {
@@ -219,6 +244,53 @@ const SEED_DASHBOARDS = [
   },
 ];
 
+// One-time, narrowly-targeted fix for rows that already ran the old
+// Utility Usage Tracker checklist seed (see the migration in ensureSchema
+// that calls this). Rewrites the label and due date of any item matching
+// BOTH the old label suffix and an old "-10" due date at once — that pair
+// only ever came from this migration's own earlier seed, so nothing else
+// can accidentally match it. A no-op once every matching row has been
+// corrected, since there's nothing left for it to find.
+const OLD_UTILITY_LABEL_SUFFIX = " — Dominion VA electric, Columbia Gas, SVEC electric";
+
+// Maps each old "-10" due date to the correct new one, derived from
+// UTILITY_TRACKER_CHECKLIST itself (year/month always matches — shifting
+// the 15th to the next Monday never crosses a month boundary) rather than
+// just swapping the day, since a few of the new dates are the 16th/17th,
+// not a flat 15th, once the weekend shift applies.
+const OLD_TO_NEW_UTILITY_DUE_DATE = new Map(
+  UTILITY_TRACKER_CHECKLIST.map((item) => {
+    const [year, month] = item.dueDate.split("-");
+    return [`${year}-${month}-10`, item.dueDate];
+  })
+);
+
+async function migrateUtilityTrackerChecklistFormat() {
+  const { rows } = await query(
+    `SELECT id, checklist FROM dashboards WHERE name = 'Utility Usage Tracker'`
+  );
+  for (const row of rows) {
+    const checklist = row.checklist || [];
+    let changed = false;
+    const updated = checklist.map((item) => {
+      const newDueDate = OLD_TO_NEW_UTILITY_DUE_DATE.get(item.dueDate);
+      if (!item.label.endsWith(OLD_UTILITY_LABEL_SUFFIX) || !newDueDate) return item;
+      changed = true;
+      return {
+        ...item,
+        label: item.label.slice(0, -OLD_UTILITY_LABEL_SUFFIX.length),
+        dueDate: newDueDate,
+      };
+    });
+    if (changed) {
+      await query(
+        `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2, updated_at = now() WHERE id = $3`,
+        [JSON.stringify(updated), computeNextUpdateDue(updated), row.id]
+      );
+    }
+  }
+}
+
 let ensureSchemaPromise = null;
 
 // Creates the table (if missing) and seeds the original dashboards (if not
@@ -304,13 +376,15 @@ function ensureSchema() {
         WHERE seed_key IN ('deal-pipeline', 'loan-database', 'how-to-create-a-claude-dashboard')
           AND next_update_due = '';
       `);
-      // Property Portfolio, same "as needed" cadence as the three above,
-      // but added through the Hub rather than seeded — no seed_key to
-      // match on, so this one keys off name instead (same pattern as the
-      // Utility Usage Tracker migration below).
+      // Triangle Property Portfolio, same "as needed" cadence as the three
+      // above, but added through the Hub rather than seeded — no seed_key
+      // to match on, so this one keys off name instead (same pattern as
+      // the Utility Usage Tracker migration below). Matches both the name
+      // it's actually under and the shorter guess an earlier migration
+      // used, in case that one's still floating around unmatched.
       await query(`
         UPDATE dashboards SET next_update_due = 'As needed'
-        WHERE name = 'Property Portfolio' AND next_update_due = '';
+        WHERE name IN ('Triangle Property Portfolio', 'Property Portfolio') AND next_update_due = '';
       `);
       // The monthly/quarterly/annual pull schedule for Quarterly Property
       // Reports (see PROPERTY_REPORTS_CHECKLIST above).
@@ -332,6 +406,25 @@ function ensureSchema() {
              sources = CASE WHEN sources = '' THEN $3 ELSE sources END
          WHERE name = 'Utility Usage Tracker' AND checklist = '[]'::jsonb`,
         [JSON.stringify(UTILITY_TRACKER_CHECKLIST), computeNextUpdateDue(UTILITY_TRACKER_CHECKLIST), UTILITY_TRACKER_SOURCES]
+      );
+      // A production database that already ran the migration above before
+      // UTILITY_TRACKER_CHECKLIST was revised (dropping the vendor list
+      // from each label, moving every due date from the 10th to the 15th)
+      // has those original items sitting in its checklist column already,
+      // so the checklist-still-empty guard above won't touch them. Fix
+      // those specific items in place instead of reseeding: only items
+      // that still have both the old label suffix AND a "-10" due date —
+      // i.e. exactly the ones this migration itself created — get
+      // corrected, so a real "due the 10th" item added later some other
+      // way is never touched.
+      await migrateUtilityTrackerChecklistFormat();
+      // The monthly pull schedule for Property Basis Tracker (see
+      // PROPERTY_BASIS_TRACKER_CHECKLIST above) — same "match by name,
+      // seed once" pattern as Utility Usage Tracker.
+      await query(
+        `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
+         WHERE name = 'Property Basis Tracker' AND checklist = '[]'::jsonb`,
+        [JSON.stringify(PROPERTY_BASIS_TRACKER_CHECKLIST), computeNextUpdateDue(PROPERTY_BASIS_TRACKER_CHECKLIST)]
       );
       // "Site password" used to just be a convention for the freeform Note
       // field (e.g. note = "Site password: 2903"). Now that it's its own

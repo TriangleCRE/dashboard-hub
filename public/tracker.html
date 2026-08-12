@@ -185,6 +185,8 @@
             <option value="all">All dashboards</option>
             <option value="overdue">Overdue</option>
             <option value="soon">Due soon (7 days)</option>
+            <option value="asneeded">As needed</option>
+            <option value="scheduled">Has a set update date</option>
           </select>
         </div>
       </div>
@@ -309,15 +311,17 @@
     return Math.round((t - Date.now()) / 86400000);
   }
 
+  // "As needed" is a deliberate "there's no schedule for this one" choice,
+  // not a missing value — used by both the status pill color and the
+  // "As needed" / "Has a set update date" Tracker filters below.
+  function isAsNeeded(site){
+    return (site.nextUpdateDue || "").trim().toLowerCase() === "as needed";
+  }
+
   function dueStatus(site){
     const days = dueInDays(site);
     if (!site.nextUpdateDue) return { cls: "status-none", label: "Not set" };
-    // "As needed" isn't a missing value like "Not set" is — it's a
-    // deliberate "there's no schedule for this one" — so it gets its own
-    // subtly different color rather than reading as the same grey.
-    if (site.nextUpdateDue.trim().toLowerCase() === "as needed") {
-      return { cls: "status-asneeded", label: esc(site.nextUpdateDue) };
-    }
+    if (isAsNeeded(site)) return { cls: "status-asneeded", label: esc(site.nextUpdateDue) };
     if (days === null) return { cls: "status-none", label: esc(site.nextUpdateDue) };
     if (days < 0) return { cls: "status-overdue", label: `${esc(site.nextUpdateDue)} · overdue` };
     if (days <= 7) return { cls: "status-soon", label: `${esc(site.nextUpdateDue)} · due soon` };
@@ -334,6 +338,11 @@
         if (filter === "overdue" && !(days < 0)) return false;
         if (filter === "soon" && !(days >= 0 && days <= 7)) return false;
       }
+      if (filter === "asneeded" && !isAsNeeded(s)) return false;
+      // "Has a set update date" is the complement of both "Not set" and
+      // "As needed" — anything with a real value in that field that isn't
+      // the "no schedule" marker, whether or not it's a date JS can parse.
+      if (filter === "scheduled" && (!s.nextUpdateDue || isAsNeeded(s))) return false;
       return matchesSearch(s, query);
     });
   }
