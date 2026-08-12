@@ -645,10 +645,35 @@ function ensureSchema() {
            AND sources = ''`,
         [PROPERTY_BASIS_RECORD_SOURCES]
       );
-      // Billing-cycle checklists for the three billing tools, all of which
-      // have been in SEED_DASHBOARDS with a stable seed_key since the
-      // start — no name-guessing needed here, unlike the dashboards added
-      // through the Hub above.
+      // Billing-cycle checklists for the three billing tools. These have
+      // been in SEED_DASHBOARDS with a stable seed_key since the start, so
+      // matching on seed_key alone should have been enough — but a report
+      // that Hoy's Sources weren't showing up despite this migration
+      // shipping means something kept it from matching that row (most
+      // likely: that row predates seed_key existing as a column, or was
+      // re-added by hand at some point and never got one). Backfill
+      // seed_key by name first — one row at a time (LIMIT 1 via the
+      // subquery), so this can never try to stamp the same seed_key onto
+      // two rows and trip the column's UNIQUE constraint even if a genuine
+      // duplicate exists — so the checklist/sources migrations below can
+      // keep matching on seed_key alone, and so the seed loop further down
+      // (which relies on ON CONFLICT (seed_key) to avoid re-inserting)
+      // doesn't insert a second row for it on this very cold start.
+      await query(`
+        UPDATE dashboards SET seed_key = 'hoy-billing-tool'
+        WHERE seed_key IS NULL AND id = (
+          SELECT id FROM dashboards WHERE seed_key IS NULL AND name = 'Hoy Billing Tool' ORDER BY id LIMIT 1
+        )`);
+      await query(`
+        UPDATE dashboards SET seed_key = 'harbor-freight-billing-tool'
+        WHERE seed_key IS NULL AND id = (
+          SELECT id FROM dashboards WHERE seed_key IS NULL AND name = 'Harbor Freight Billing Tool' ORDER BY id LIMIT 1
+        )`);
+      await query(`
+        UPDATE dashboards SET seed_key = '211-213-n-lewis-billing-tool'
+        WHERE seed_key IS NULL AND id = (
+          SELECT id FROM dashboards WHERE seed_key IS NULL AND name = '211/213 N Lewis Billing Tool' ORDER BY id LIMIT 1
+        )`);
       await query(
         `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
          WHERE seed_key = 'hoy-billing-tool' AND checklist = '[]'::jsonb`,

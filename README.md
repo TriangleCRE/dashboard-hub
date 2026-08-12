@@ -137,7 +137,13 @@ May '27–Jul '27, each due the 1st of the month after the bill period
 ends); Harbor Freight is billed monthly (14 items, May '26–Jun '26 through
 Jun '27–Jul '27, same "due the 1st of the following month" rule). Unlike
 the checklists above, these three ship in `SEED_DASHBOARDS` with a stable
-`seed_key`, so their migrations match on that instead of on name.
+`seed_key`, so their migrations match on that instead of on name — except
+that Hoy's Sources didn't show up after they first shipped, meaning its
+production row's `seed_key` wasn't actually set (most likely it predates
+that column, or was re-added by hand at some point). `ensureSchema()` now
+backfills `seed_key` by name first, one row at a time, before the
+checklist/sources migrations run, so this can't recur and can't create a
+duplicate row on the same cold start either.
 
 Sources supports up to 3,000 characters and can hold several lines with
 multiple links — the Sources popover on the Tracker turns any `http(s)://`
@@ -151,9 +157,11 @@ still links too, just with the URL itself as the visible text. Quarterly
 Property Reports, Deal Pipeline, Loan Database, Utility Usage Tracker,
 CAM, Taxes, & Insurance, Property Basis Record, Hoy Billing Tool, Harbor
 Freight Billing Tool, and 211/213 N Lewis Billing Tool all have theirs
-filled in this way. Click the "Sources" button (next to the pencil icon
-that edits the list) to open the popover — it's click-to-toggle, not
-hover, so it stays open while you scroll to a link and click it.
+filled in this way. Click the "Sources" button to open the popover — it's
+click-to-toggle, not hover, so it stays open while you scroll to a link
+and click it. The pencil that edits the list lives inside the popover
+itself (next to the "Sources" label at the top), not out in the table —
+it's an action on the list you just opened.
 
 Dashboards added through the Hub (rather than shipped in `SEED_DASHBOARDS`)
 have no `seed_key`, so a migration seeding one of these has to match on

@@ -235,3 +235,23 @@ a.btn-remove:hover{text-decoration:underline}
   background:rgba(255,255,255,.4);margin-top:7px;
 }
 .source-line .text{flex:1 1 auto;min-width:0;white-space:pre-wrap}
+
+/* The pencil that edits the Sources list lives here, in the popover's own
+   header, rather than out in the table next to the trigger button — it's
+   an action on the list you just opened, so it belongs where the list is. */
+.sources-popover-header{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:7px;margin-bottom:3px;border-bottom:1px solid rgba(255,255,255,.14);
+}
+.sources-popover-label{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:rgba(255,255,255,.7);
+}
+.sources-popover-edit-btn{
+  flex:none;display:flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:50%;font-family:inherit;font-size:12px;
+  line-height:1;cursor:pointer;color:#fff;background:transparent;
+  border:1.5px solid rgba(255,255,255,.35);
+  transition:background .15s, border-color .15s;
+}
+.sources-popover-edit-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.6)}
