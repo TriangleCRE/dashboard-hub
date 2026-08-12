@@ -110,7 +110,15 @@ Deal Pipeline, Loan Database, and How to Create a Claude Dashboard are
 set to "As needed" — they get updated as new deals/loans show up or the
 guide needs a tweak, not on a schedule. Quarterly Property Reports has its
 full monthly/quarterly/annual pull schedule seeded in as a checklist (see
-`PROPERTY_REPORTS_CHECKLIST` in `src/db.js`).
+`PROPERTY_REPORTS_CHECKLIST` in `src/db.js`), and Utility Usage Tracker has
+the next 12 months of its monthly Yardi Breeze pull seeded in the same way
+(`UTILITY_TRACKER_CHECKLIST`) — add more from the Tracker as they come up,
+since neither checklist regenerates itself once it runs out.
+
+Dashboards added through the Hub (rather than shipped in `SEED_DASHBOARDS`)
+have no `seed_key`, so a migration seeding one of these has to match on
+something else stable — Utility Usage Tracker's checklist migration
+matches on its exact name for that reason.
 
 ## Local development
 

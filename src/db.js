@@ -94,6 +94,35 @@ const PROPERTY_REPORTS_CHECKLIST = [
   checklistItem("Create/update the FY2026 (Jan–Dec) report", "2027-02-24"),
 ];
 
+// One-time checklist seed for "Utility Usage Tracker" (see the migration
+// in ensureSchema below) — added directly through the Hub, so unlike the
+// dashboards below there's no seed_key to match on; the migration matches
+// by name instead. Unlike Property Reports, the "Utility Tracker Update
+// Prompt" doc doesn't give a fixed list of future dates — it's an ongoing
+// monthly pull, best run after the ~8th–10th (once bills from all three
+// vendors have posted), so this seeds the next 12 months on that cadence
+// rather than a doc-given list; add more from the Tracker as they come up.
+const UTILITY_TRACKER_CHECKLIST = [
+  checklistItem("Update Aug 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2026-09-10"),
+  checklistItem("Update Sep 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2026-10-10"),
+  checklistItem("Update Oct 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2026-11-10"),
+  checklistItem("Update Nov 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2026-12-10"),
+  checklistItem("Update Dec 2026 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-01-10"),
+  checklistItem("Update Jan 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-02-10"),
+  checklistItem("Update Feb 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-03-10"),
+  checklistItem("Update Mar 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-04-10"),
+  checklistItem("Update Apr 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-05-10"),
+  checklistItem("Update May 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-06-10"),
+  checklistItem("Update Jun 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-07-10"),
+  checklistItem("Update Jul 2027 usage — Dominion VA electric, Columbia Gas, SVEC electric", "2027-08-10"),
+];
+
+const UTILITY_TRACKER_SOURCES =
+  "Yardi Breeze vendor ledgers — Dominion VA electric (#10456), Columbia Gas (#10380), " +
+  "SVEC Coop electric (#10922). Update via Claude Code/Cowork with " +
+  "Utility_Usage_Tracker.xlsx attached, Chrome logged into Yardi. Run after the " +
+  "~8th–10th of the month once bills post.";
+
 const SEED_DASHBOARDS = [
   {
     seedKey: "how-to-create-a-claude-dashboard",
@@ -281,6 +310,20 @@ function ensureSchema() {
         `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
          WHERE seed_key = 'quarterly-property-reports' AND checklist = '[]'::jsonb`,
         [JSON.stringify(PROPERTY_REPORTS_CHECKLIST), computeNextUpdateDue(PROPERTY_REPORTS_CHECKLIST)]
+      );
+      // The monthly pull schedule for Utility Usage Tracker (see
+      // UTILITY_TRACKER_CHECKLIST above). This dashboard was added through
+      // the Hub, not seeded, so there's no seed_key to key off — match by
+      // name instead. Sources only fills in if still blank, independent of
+      // the checklist guard, so it doesn't clobber a note someone's since
+      // written by hand.
+      await query(
+        `UPDATE dashboards
+         SET checklist = $1::jsonb,
+             next_update_due = $2,
+             sources = CASE WHEN sources = '' THEN $3 ELSE sources END
+         WHERE name = 'Utility Usage Tracker' AND checklist = '[]'::jsonb`,
+        [JSON.stringify(UTILITY_TRACKER_CHECKLIST), computeNextUpdateDue(UTILITY_TRACKER_CHECKLIST), UTILITY_TRACKER_SOURCES]
       );
       // "Site password" used to just be a convention for the freeform Note
       // field (e.g. note = "Site password: 2903"). Now that it's its own
