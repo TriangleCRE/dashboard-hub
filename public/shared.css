@@ -198,30 +198,46 @@ a.btn-remove:hover{text-decoration:underline}
 #deleteConfirmYes{background:#b23b3b;color:#fff}
 #deleteConfirmYes:hover{background:#96302f}
 
-/* ---------- HOVER / FOCUS INFO POPOVER (Tracker "Sources" column) ---------- */
-.info-pop{position:relative;display:inline-flex;vertical-align:middle}
+/* ---------- SOURCES INFO ICON + POPOVER (Tracker "Sources" column) ---------- */
 .info-icon{
   width:22px;height:22px;border-radius:50%;flex:none;
   border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);
   font-size:12px;font-weight:700;font-family:inherit;cursor:default;
   display:flex;align-items:center;justify-content:center;
 }
-.info-pop:hover .info-icon, .info-pop:focus-within .info-icon{border-color:var(--green);color:var(--green-dark)}
-.info-pop-bubble{
-  position:absolute;left:50%;bottom:calc(100% + 9px);transform:translateX(-50%) translateY(4px);
-  min-width:220px;max-width:440px;width:max-content;max-height:min(45vh,340px);overflow-y:auto;
-  background:var(--ink);color:#fff;
-  font-size:12.5px;line-height:1.55;font-weight:400;padding:11px 13px;border-radius:10px;
-  box-shadow:0 10px 24px rgba(0,0,0,.22);white-space:pre-wrap;text-align:left;
-  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s ease, transform .12s ease;
-  z-index:30;
+.info-icon:hover, .info-icon:focus-visible{border-color:var(--green);color:var(--green-dark)}
+
+/* The popover itself is appended to <body> and positioned in JS
+   (initSourcesPopover() in public/tracker.html) rather than living next to
+   the icon in the DOM and floating via CSS — a plain CSS hover bubble
+   inside the table gets clipped by the table's own horizontal scroll
+   container, and centering it on the icon runs it off the right edge of
+   the screen for a column this close to the edge. Positioning in JS
+   (position:fixed, clamped to the viewport, flips below when there's no
+   room above) fixes both. */
+.sources-popover{
+  position:fixed;z-index:60;background:var(--ink);color:#fff;
+  min-width:240px;max-width:460px;max-height:min(60vh,420px);overflow-y:auto;
+  padding:10px 14px;border-radius:12px;font-size:12.5px;line-height:1.5;
+  box-shadow:0 14px 32px rgba(0,0,0,.28);
+  opacity:0;transform:translateY(4px);pointer-events:none;
+  transition:opacity .12s ease, transform .12s ease;
 }
-.info-pop-bubble a{color:#9cc9ff;text-decoration:underline}
-.info-pop-bubble a:hover{color:#c3e0ff}
-.info-pop-bubble::after{
-  content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);
-  border:6px solid transparent;border-top-color:var(--ink);
+.sources-popover.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+.sources-popover::before{
+  content:"";position:absolute;left:var(--sp-arrow-left, 20px);
+  border:6px solid transparent;
 }
-.info-pop:hover .info-pop-bubble, .info-pop:focus-within .info-pop-bubble{
-  opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);pointer-events:auto;
+.sources-popover:not(.below)::before{top:100%;border-top-color:var(--ink)}
+.sources-popover.below::before{bottom:100%;border-bottom-color:var(--ink)}
+.sources-popover a{color:#9cc9ff;text-decoration:underline;word-break:break-word}
+.sources-popover a:hover{color:#c3e0ff}
+.source-line{
+  display:flex;gap:9px;align-items:flex-start;padding:7px 0;
 }
+.source-line + .source-line{border-top:1px solid rgba(255,255,255,.10)}
+.source-line .dot{
+  flex:none;width:5px;height:5px;border-radius:50%;
+  background:rgba(255,255,255,.4);margin-top:7px;
+}
+.source-line .text{flex:1 1 auto;min-width:0;white-space:pre-wrap}

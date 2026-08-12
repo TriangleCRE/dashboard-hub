@@ -485,17 +485,130 @@
     );
   }
 
+  // One row per line rather than one pre-wrapped blob — a dot + a divider
+  // between entries reads much more like a list of distinct sources and
+  // much less like a wall of text, especially once a couple of lines wrap.
+  function sourcesPopoverHtml(text){
+    return text.split("\n").map(line => line.trim()).filter(Boolean)
+      .map(line => `<div class="source-line"><span class="dot"></span><span class="text">${linkifySources(line)}</span></div>`)
+      .join("");
+  }
+
   function sourcesDisplayHtml(s){
     if (s.sources) {
       return `
-        <span class="info-pop">
-          <button type="button" class="info-icon" aria-label="Sources needed to update ${esc(s.name)}">ⓘ</button>
-          <span class="info-pop-bubble">${linkifySources(s.sources)}</span>
-        </span>
+        <button type="button" class="info-icon" data-sources-trigger="${s.id}" aria-label="Sources needed to update ${esc(s.name)}">ⓘ</button>
         <button type="button" class="icon-btn edit-sources-btn" data-edit-sources-id="${s.id}" title="Edit sources" aria-label="Edit sources for ${esc(s.name)}">✎</button>`;
     }
     return `<button type="button" class="add-sources-btn" data-edit-sources-id="${s.id}">+ Add</button>`;
   }
+
+  /* =========================================================================
+     SOURCES POPOVER
+     -------------------------------------------------------------------------
+     Appended to <body> and positioned with getBoundingClientRect() rather
+     than living next to the icon in the table and floating there via
+     CSS :hover — a plain CSS bubble inside the table gets clipped by the
+     table's own horizontal scroll container, and centering it on the icon
+     runs it off the right edge of the screen for a column this close to
+     the edge. Only one popover is ever open; a short delay on hide lets
+     the mouse travel from the icon into the popover itself (to click a
+     link) without it closing first.
+     ========================================================================= */
+  let openSourcesPopover = null; // { trigger, panel }
+  let sourcesHideTimer = null;
+
+  function cancelSourcesHide(){
+    if (sourcesHideTimer) { clearTimeout(sourcesHideTimer); sourcesHideTimer = null; }
+  }
+
+  function scheduleSourcesHide(){
+    cancelSourcesHide();
+    sourcesHideTimer = setTimeout(closeSourcesPopover, 150);
+  }
+
+  function closeSourcesPopover(){
+    cancelSourcesHide();
+    if (openSourcesPopover) {
+      openSourcesPopover.panel.remove();
+      openSourcesPopover = null;
+    }
+  }
+
+  // Centers the popover on the trigger horizontally, clamped so it never
+  // runs past the viewport's edges; opens above the trigger unless there's
+  // no room, in which case it flips below. The little pointer arrow (::
+  // before, in shared.css) tracks the trigger's actual center via a CSS
+  // variable even after the panel itself got clamped away from it.
+  function positionSourcesPopover(trigger, panel){
+    const margin = 12;
+    const triggerRect = trigger.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+
+    let left = triggerRect.left + triggerRect.width / 2 - panelRect.width / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - panelRect.width - margin));
+
+    let top = triggerRect.top - panelRect.height - 9;
+    let below = false;
+    if (top < margin) {
+      top = triggerRect.bottom + 9;
+      below = true;
+    }
+
+    const arrowLeft = Math.max(12, Math.min(triggerRect.left + triggerRect.width / 2 - left, panelRect.width - 12));
+
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+    panel.style.setProperty("--sp-arrow-left", `${arrowLeft}px`);
+    panel.classList.toggle("below", below);
+  }
+
+  function openSourcesPopoverFor(trigger, html){
+    cancelSourcesHide();
+    if (openSourcesPopover && openSourcesPopover.trigger === trigger) return;
+    closeSourcesPopover();
+
+    const panel = document.createElement("div");
+    panel.className = "sources-popover";
+    panel.setAttribute("role", "tooltip");
+    panel.innerHTML = html;
+    panel.addEventListener("mouseenter", cancelSourcesHide);
+    panel.addEventListener("mouseleave", scheduleSourcesHide);
+    document.body.appendChild(panel);
+    positionSourcesPopover(trigger, panel);
+    requestAnimationFrame(() => panel.classList.add("visible"));
+
+    openSourcesPopover = { trigger, panel };
+  }
+
+  function wireSourcesPopovers(sites){
+    tableHost.querySelectorAll("[data-sources-trigger]").forEach(trigger => {
+      const site = sites.find(s => String(s.id) === trigger.getAttribute("data-sources-trigger"));
+      if (!site) return;
+      const html = sourcesPopoverHtml(site.sources);
+      trigger.addEventListener("mouseenter", () => openSourcesPopoverFor(trigger, html));
+      trigger.addEventListener("mouseleave", scheduleSourcesHide);
+      trigger.addEventListener("focus", () => openSourcesPopoverFor(trigger, html));
+      trigger.addEventListener("blur", scheduleSourcesHide);
+    });
+  }
+
+  // A popover left open while the page scrolls or the window resizes would
+  // be pointing at a stale position; closing it is simpler and safer than
+  // trying to re-track the trigger. `true` (capture) so this still fires
+  // for a scroll inside .table-wrap's own horizontal scrollbar, which
+  // doesn't bubble to window the way a plain page scroll does.
+  window.addEventListener("scroll", closeSourcesPopover, true);
+  window.addEventListener("resize", closeSourcesPopover);
+
+  // Belt-and-suspenders: a click that isn't on the popover or its trigger
+  // (e.g. the pencil icon right next to it) closes it immediately rather
+  // than waiting on the hover-out delay.
+  document.addEventListener("click", (e) => {
+    if (!openSourcesPopover) return;
+    if (openSourcesPopover.panel.contains(e.target) || openSourcesPopover.trigger.contains(e.target)) return;
+    closeSourcesPopover();
+  });
 
   // The three single-line fields editable right in the table. Each entry's
   // `display` re-renders that cell's normal (non-editing) contents, so
@@ -519,6 +632,10 @@
   }
 
   function renderTable(sites){
+    // A full re-render replaces every row, so a popover left pointing at
+    // an element that's about to be destroyed would end up orphaned,
+    // floating over whatever's now in that spot instead of closing.
+    closeSourcesPopover();
     const rows = sites.map(s => {
       const mainRow = `
         <tr>
@@ -591,6 +708,7 @@
     });
 
     wireChecklistControls();
+    wireSourcesPopovers(sites);
   }
 
   // Merges a fresh dashboard record from the API into both the object a
