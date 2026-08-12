@@ -133,8 +133,12 @@ multiple links — the hover popover on the Tracker turns any `http(s)://`
 URL in it into a clickable link (`linkifySources()` in `public/tracker.html`),
 so a Sources note doesn't have to stay short to include real links to the
 GIS sites, Yardi Breeze, Google Drive/Sheets, etc. that a dashboard's
-update actually draws from. Quarterly Property Reports, Utility Usage
-Tracker, and CAM, Taxes, & Insurance all have theirs filled in this way.
+update actually draws from. Write `[a short label](https://...)` and the
+label becomes the link's visible text instead of the raw URL — handy for
+the long, parameter-heavy GIS links in particular; a bare `https://...`
+still links too, just with the URL itself as the visible text. Quarterly
+Property Reports, Deal Pipeline, Loan Database, Utility Usage Tracker, and
+CAM, Taxes, & Insurance all have theirs filled in this way.
 
 Dashboards added through the Hub (rather than shipped in `SEED_DASHBOARDS`)
 have no `seed_key`, so a migration seeding one of these has to match on

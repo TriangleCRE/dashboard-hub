@@ -464,14 +464,25 @@
     return `${title}${pill}${toggle}`;
   }
 
-  // Escapes first, then wraps http(s) URLs in the now-escaped text with
-  // real anchor tags — safe because a URL never contains the characters
-  // esc() escapes, so matching against the escaped text still finds every
-  // URL intact (an "&" inside e.g. a query string just reads as "&amp;",
+  // Escapes first, then turns URLs in the now-escaped text into real
+  // anchor tags — safe because a URL never contains the characters esc()
+  // escapes, so matching against the escaped text still finds every URL
+  // intact (an "&" inside e.g. a query string just reads as "&amp;",
   // which browsers decode back to "&" wherever it ends up, including
-  // inside the href itself).
+  // inside the href itself). Two forms, tried in this order so the first
+  // never gets a second, conflicting pass over the link it just made:
+  //   - "[label](url)" — linked with the label as the visible text, for
+  //     Sources written with a real link (see PROPERTY_REPORTS_SOURCES
+  //     and friends in src/db.js for examples).
+  //   - a bare "http(s)://..." on its own — linked with the URL itself as
+  //     the visible text, same as before this existed.
   function linkifySources(text){
-    return esc(text).replace(/(https?:\/\/[^\s<>"]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    return esc(text).replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s()]+)\)|(https?:\/\/[^\s<>"]+)/g,
+      (match, label, labeledUrl, bareUrl) => bareUrl
+        ? `<a href="${bareUrl}" target="_blank" rel="noopener">${bareUrl}</a>`
+        : `<a href="${labeledUrl}" target="_blank" rel="noopener">${label}</a>`
+    );
   }
 
   function sourcesDisplayHtml(s){
