@@ -94,7 +94,6 @@
     padding:5px 12px;cursor:pointer;white-space:nowrap;
   }
   .sources-btn:hover, .sources-btn[aria-expanded="true"]{border-color:var(--green);color:var(--green-dark)}
-  .edit-sources-btn{margin-left:7px}
   td.col-sources{white-space:normal}
 
   /* ---------- UPDATE CHECKLIST ---------- */
@@ -165,8 +164,8 @@
       </div>
       <p class="section-hint">
         Every dashboard on the Hub, in one table: when it was last updated, when it's next
-        due, who's the one person that can edit it in Claude Code, and — hover or tab to the
-        <strong>ⓘ</strong> — the sources needed to update it. Click any Owner, Last updated,
+        due, who's the one person that can edit it in Claude Code, and — click
+        <strong>Sources</strong> — the sources needed to update it. Click any Owner, Last updated,
         Next update due, or Sources value to edit it right here — no form to open. Under
         "Next update due," open the checklist to see (or add) the specific reports/tasks due
         and check one off as you finish it — that automatically updates "Last updated" too.
@@ -494,17 +493,25 @@
   // One row per line rather than one pre-wrapped blob — a dot + a divider
   // between entries reads much more like a list of distinct sources and
   // much less like a wall of text, especially once a couple of lines wrap.
-  function sourcesPopoverHtml(text){
-    return text.split("\n").map(line => line.trim()).filter(Boolean)
+  // The pencil that edits the list lives in the popover's own header (see
+  // .sources-popover-header in shared.css) rather than next to the trigger
+  // button out in the table — it's an action on the list you just opened,
+  // not a second thing to press before you've even seen what's in it.
+  function sourcesPopoverHtml(text, site){
+    const rows = text.split("\n").map(line => line.trim()).filter(Boolean)
       .map(line => `<div class="source-line"><span class="dot"></span><span class="text">${linkifySources(line)}</span></div>`)
       .join("");
+    return `
+      <div class="sources-popover-header">
+        <span class="sources-popover-label">Sources</span>
+        <button type="button" class="sources-popover-edit-btn" data-edit-sources-id="${site.id}" title="Edit sources" aria-label="Edit sources for ${esc(site.name)}">✎</button>
+      </div>
+      ${rows}`;
   }
 
   function sourcesDisplayHtml(s){
     if (s.sources) {
-      return `
-        <button type="button" class="sources-btn" data-sources-trigger="${s.id}" aria-haspopup="true" aria-expanded="false" aria-label="Sources needed to update ${esc(s.name)}">Sources</button>
-        <button type="button" class="icon-btn edit-sources-btn" data-edit-sources-id="${s.id}" title="Edit sources" aria-label="Edit sources for ${esc(s.name)}">✎</button>`;
+      return `<button type="button" class="sources-btn" data-sources-trigger="${s.id}" aria-haspopup="true" aria-expanded="false" aria-label="Sources needed to update ${esc(s.name)}">Sources</button>`;
     }
     return `<button type="button" class="add-sources-btn" data-edit-sources-id="${s.id}">+ Add</button>`;
   }
@@ -561,8 +568,10 @@
 
   // Clicking an already-open trigger's own button is a close, not a
   // re-open — closeSourcesPopover() runs first either way so there's never
-  // more than one popover on screen.
-  function toggleSourcesPopover(trigger, html){
+  // more than one popover on screen. `site` is only needed to wire up the
+  // pencil in the popover's own header (clicking it closes the popover and
+  // opens the same in-table edit the old cell-level pencil used to).
+  function toggleSourcesPopover(trigger, html, site){
     const wasOpenForThisTrigger = openSourcesPopover && openSourcesPopover.trigger === trigger;
     closeSourcesPopover();
     if (wasOpenForThisTrigger) return;
@@ -576,17 +585,37 @@
 
     trigger.setAttribute("aria-expanded", "true");
     openSourcesPopover = { trigger, panel };
+
+    const editBtn = panel.querySelector("[data-edit-sources-id]");
+    if (editBtn) {
+      editBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeSourcesPopover();
+        const cell = trigger.closest("td.col-sources");
+        if (cell) beginSourcesEdit(cell, site);
+      });
+    }
+  }
+
+  // Wires the "Sources" trigger button in a given cell to open its
+  // popover — split out from wireSourcesPopovers() so beginSourcesEdit()'s
+  // cancel path can re-wire just the one cell it touched instead of
+  // re-scanning (and double-binding) the whole table.
+  function wireSourcesTrigger(cell, site){
+    const trigger = cell.querySelector("[data-sources-trigger]");
+    if (!trigger) return;
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation(); // don't let the document click-outside handler below immediately close what this just opened
+      toggleSourcesPopover(trigger, sourcesPopoverHtml(site.sources, site), site);
+    });
   }
 
   function wireSourcesPopovers(sites){
-    tableHost.querySelectorAll("[data-sources-trigger]").forEach(trigger => {
+    tableHost.querySelectorAll("td.col-sources").forEach(cell => {
+      const trigger = cell.querySelector("[data-sources-trigger]");
+      if (!trigger) return;
       const site = sites.find(s => String(s.id) === trigger.getAttribute("data-sources-trigger"));
-      if (!site) return;
-      const html = sourcesPopoverHtml(site.sources);
-      trigger.addEventListener("click", (e) => {
-        e.stopPropagation(); // don't let the document click-outside handler below immediately close what this just opened
-        toggleSourcesPopover(trigger, html);
-      });
+      if (site) wireSourcesTrigger(cell, site);
     });
   }
 
@@ -804,9 +833,14 @@
     const finish = (newHtml) => {
       cell.classList.remove("editing", "cell-saving");
       cell.innerHTML = newHtml;
+      // Sources still empty → the cell shows "+ Add" again, wire that up.
+      // Sources non-empty → the cell shows the "Sources" trigger button
+      // instead, whose click opens the popover (the pencil to re-edit now
+      // lives inside that popover, not the cell — see wireSourcesTrigger()).
       tableHost.querySelectorAll(`[data-edit-sources-id="${site.id}"]`).forEach(btn => {
         btn.addEventListener("click", () => beginSourcesEdit(btn.closest("td.col-sources"), site));
       });
+      wireSourcesTrigger(cell, site);
     };
 
     cell.querySelector(".cell-cancel").addEventListener("click", () => finish(sourcesDisplayHtml(site)));
