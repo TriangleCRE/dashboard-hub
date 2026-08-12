@@ -137,27 +137,30 @@ const UTILITY_TRACKER_SOURCES = [
   "Combined electric+gas+water: City of Danville Utilities (v0002097)",
 ].join("\n");
 
-// One-time checklist seed for "Property Basis Tracker" (see the migration
+// One-time checklist seed for "Property Basis Record" (see the migration
 // in ensureSchema below) — added through the Hub, so matched by name like
-// Utility Usage Tracker above. A given month's basis tracker is due the
-// 15th of the following month (e.g. the Jul 2026 tracker is due Aug 15,
-// 2026), pushed to the next Monday when the 15th lands on a weekend —
-// same rule and same weekday shifts as Property Reports' monthly items.
+// Utility Usage Tracker above. (Two earlier PRs guessed this dashboard's
+// name as "Property Basis Tracker" — confirmed by screenshot to actually
+// be "Property Basis Record", hence the labels/match below and not
+// "...Tracker".) A given month's basis record is due the 15th of the
+// following month (e.g. the Jul 2026 one is due Aug 15, 2026), pushed to
+// the next Monday when the 15th lands on a weekend — same rule and same
+// weekday shifts as Property Reports' monthly items.
 const PROPERTY_BASIS_TRACKER_CHECKLIST = [
-  checklistItem("Create/update the Jul 2026 Basis Tracker", "2026-08-17"),
-  checklistItem("Create/update the Aug 2026 Basis Tracker", "2026-09-15"),
-  checklistItem("Create/update the Sep 2026 Basis Tracker", "2026-10-15"),
-  checklistItem("Create/update the Oct 2026 Basis Tracker", "2026-11-16"),
-  checklistItem("Create/update the Nov 2026 Basis Tracker", "2026-12-15"),
-  checklistItem("Create/update the Dec 2026 Basis Tracker", "2027-01-15"),
-  checklistItem("Create/update the Jan 2027 Basis Tracker", "2027-02-15"),
-  checklistItem("Create/update the Feb 2027 Basis Tracker", "2027-03-15"),
-  checklistItem("Create/update the Mar 2027 Basis Tracker", "2027-04-15"),
-  checklistItem("Create/update the Apr 2027 Basis Tracker", "2027-05-17"),
-  checklistItem("Create/update the May 2027 Basis Tracker", "2027-06-15"),
-  checklistItem("Create/update the Jun 2027 Basis Tracker", "2027-07-15"),
-  checklistItem("Create/update the Jul 2027 Basis Tracker", "2027-08-16"),
-  checklistItem("Create/update the Aug 2027 Basis Tracker", "2027-09-15"),
+  checklistItem("Create/update the Jul 2026 Basis Record", "2026-08-17"),
+  checklistItem("Create/update the Aug 2026 Basis Record", "2026-09-15"),
+  checklistItem("Create/update the Sep 2026 Basis Record", "2026-10-15"),
+  checklistItem("Create/update the Oct 2026 Basis Record", "2026-11-16"),
+  checklistItem("Create/update the Nov 2026 Basis Record", "2026-12-15"),
+  checklistItem("Create/update the Dec 2026 Basis Record", "2027-01-15"),
+  checklistItem("Create/update the Jan 2027 Basis Record", "2027-02-15"),
+  checklistItem("Create/update the Feb 2027 Basis Record", "2027-03-15"),
+  checklistItem("Create/update the Mar 2027 Basis Record", "2027-04-15"),
+  checklistItem("Create/update the Apr 2027 Basis Record", "2027-05-17"),
+  checklistItem("Create/update the May 2027 Basis Record", "2027-06-15"),
+  checklistItem("Create/update the Jun 2027 Basis Record", "2027-07-15"),
+  checklistItem("Create/update the Jul 2027 Basis Record", "2027-08-16"),
+  checklistItem("Create/update the Aug 2027 Basis Record", "2027-09-15"),
 ];
 
 const PROPERTY_REPORTS_SOURCES = [
@@ -169,13 +172,16 @@ const PROPERTY_REPORTS_SOURCES = [
   "Download a completed report from the dashboard for reference when creating a new one https://triangle-property-reports.vercel.app/",
 ].join("\n");
 
-// One-time checklist + sources seed for "CAM Insurance Taxes Tracker" —
-// added through the Hub, matched by name like the others above. Only one
-// item so far: the 2026 tracker, due the same date (Feb 24, 2027) as
-// Property Reports' FY2026 annual report — add the 2027 item and beyond
-// from the Tracker once its own due date is known.
+// One-time checklist + sources seed for "CAM, Taxes, & Insurance" — added
+// through the Hub, matched by name like the others above. (An earlier PR
+// guessed this dashboard's name as "CAM Insurance Taxes Tracker" —
+// confirmed by screenshot to actually be "CAM, Taxes, & Insurance", hence
+// the label/match below.) Only one item so far: the 2026 update, due the
+// same date (Feb 24, 2027) as Property Reports' FY2026 annual report —
+// add the 2027 item and beyond from the Tracker once its own due date is
+// known.
 const CAM_TRACKER_CHECKLIST = [
-  checklistItem("Create/update the 2026 CAM Insurance Taxes Tracker", "2027-02-24"),
+  checklistItem("Update the 2026 CAM, Taxes, & Insurance tracker", "2027-02-24"),
 ];
 
 const CAM_TRACKER_SOURCES = [
@@ -473,22 +479,33 @@ function ensureSchema() {
          WHERE name = 'Utility Usage Tracker' AND sources = $2`,
         [UTILITY_TRACKER_SOURCES, OLD_UTILITY_TRACKER_SOURCES]
       );
-      // The monthly pull schedule for Property Basis Tracker (see
+      // The monthly pull schedule for Property Basis Record (see
       // PROPERTY_BASIS_TRACKER_CHECKLIST above) — same "match by name,
-      // seed once" pattern as Utility Usage Tracker.
+      // seed once" pattern as Utility Usage Tracker. Two earlier guesses
+      // at this dashboard's name ("Property Basis Tracker", then a looser
+      // "%Basis Tracker%") both missed — a screenshot confirmed the real
+      // name is "Property Basis Record", with no "Tracker" in it at all.
+      // Matching both the confirmed name and the old guesses costs
+      // nothing (the guesses just never match anything) and means a
+      // revert back to an old name wouldn't silently break this again.
       await query(
         `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
-         WHERE name = 'Property Basis Tracker' AND checklist = '[]'::jsonb`,
+         WHERE name IN ('Property Basis Record', 'Property Basis Tracker', 'Triangle Property Basis Tracker')
+           AND checklist = '[]'::jsonb`,
         [JSON.stringify(PROPERTY_BASIS_TRACKER_CHECKLIST), computeNextUpdateDue(PROPERTY_BASIS_TRACKER_CHECKLIST)]
       );
-      // The 2026 checklist item (and Sources) for CAM Insurance Taxes
-      // Tracker — same "match by name, seed once" pattern as the others.
+      // The 2026 checklist item (and Sources) for CAM, Taxes, & Insurance
+      // — same "match by name, seed once" pattern. Same story as Property
+      // Basis Record above: two earlier guesses ("CAM Insurance Taxes
+      // Tracker", then an ILIKE pattern assuming "Tracker" was in the
+      // name) both missed — the real name is "CAM, Taxes, & Insurance".
       await query(
         `UPDATE dashboards
          SET checklist = $1::jsonb,
              next_update_due = $2,
              sources = CASE WHEN sources = '' THEN $3 ELSE sources END
-         WHERE name = 'CAM Insurance Taxes Tracker' AND checklist = '[]'::jsonb`,
+         WHERE name IN ('CAM, Taxes, & Insurance', 'CAM Insurance Taxes Tracker', 'CAM Insurance Tax Tracker')
+           AND checklist = '[]'::jsonb`,
         [JSON.stringify(CAM_TRACKER_CHECKLIST), computeNextUpdateDue(CAM_TRACKER_CHECKLIST), CAM_TRACKER_SOURCES]
       );
       // "Site password" used to just be a convention for the freeform Note
