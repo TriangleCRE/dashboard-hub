@@ -304,6 +304,14 @@ function ensureSchema() {
         WHERE seed_key IN ('deal-pipeline', 'loan-database', 'how-to-create-a-claude-dashboard')
           AND next_update_due = '';
       `);
+      // Property Portfolio, same "as needed" cadence as the three above,
+      // but added through the Hub rather than seeded — no seed_key to
+      // match on, so this one keys off name instead (same pattern as the
+      // Utility Usage Tracker migration below).
+      await query(`
+        UPDATE dashboards SET next_update_due = 'As needed'
+        WHERE name = 'Property Portfolio' AND next_update_due = '';
+      `);
       // The monthly/quarterly/annual pull schedule for Quarterly Property
       // Reports (see PROPERTY_REPORTS_CHECKLIST above).
       await query(
