@@ -106,9 +106,13 @@ checklist instead. A dashboard with no checklist yet keeps the plain
 editable field (handy for "As needed" dashboards, or a quick hand-typed
 date that doesn't need a whole checklist).
 
-Deal Pipeline, Loan Database, and How to Create a Claude Dashboard are
-set to "As needed" — they get updated as new deals/loans show up or the
-guide needs a tweak, not on a schedule. Quarterly Property Reports has its
+Deal Pipeline, Loan Database, Property Portfolio, and How to Create a
+Claude Dashboard are set to "As needed" — they get updated as new
+deals/loans/properties show up or the guide needs a tweak, not on a
+schedule. "As needed" gets its own subtly different status-pill color
+(`.status-asneeded`) rather than reading as the same grey as "Not set" —
+it's a deliberate choice, not a missing value. Quarterly Property Reports
+has its
 full monthly/quarterly/annual pull schedule seeded in as a checklist (see
 `PROPERTY_REPORTS_CHECKLIST` in `src/db.js`), and Utility Usage Tracker has
 the next 12 months of its monthly Yardi Breeze pull seeded in the same way

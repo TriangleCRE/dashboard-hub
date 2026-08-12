@@ -20,6 +20,8 @@
   --red-tint:#fdf3f3;
   --amber:#a9720f;
   --amber-tint:#fff6e5;
+  --slate:#3d6b8a;
+  --slate-tint:#eaf2f7;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}

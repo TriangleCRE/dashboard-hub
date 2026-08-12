@@ -45,6 +45,11 @@
   .status-soon{color:var(--amber);background:var(--amber-tint)}
   .status-ok{color:var(--green-dark);background:rgba(51,166,63,.12)}
   .status-none{color:var(--ink-soft);background:#eef0f1}
+  /* Subtly distinct from status-none ("Not set") — "As needed" isn't a
+     missing value, it's a deliberate "there's no schedule" choice, so it
+     gets its own (still muted, non-alarming) color rather than reading as
+     the same "nothing's here yet" grey. */
+  .status-asneeded{color:var(--slate);background:var(--slate-tint)}
   table.tracker td.col-actions{text-align:right}
 
   /* ---------- CLICK-TO-EDIT CELLS (Owner / Last updated / Next update due / Sources) ---------- */
@@ -307,6 +312,12 @@
   function dueStatus(site){
     const days = dueInDays(site);
     if (!site.nextUpdateDue) return { cls: "status-none", label: "Not set" };
+    // "As needed" isn't a missing value like "Not set" is — it's a
+    // deliberate "there's no schedule for this one" — so it gets its own
+    // subtly different color rather than reading as the same grey.
+    if (site.nextUpdateDue.trim().toLowerCase() === "as needed") {
+      return { cls: "status-asneeded", label: esc(site.nextUpdateDue) };
+    }
     if (days === null) return { cls: "status-none", label: esc(site.nextUpdateDue) };
     if (days < 0) return { cls: "status-overdue", label: `${esc(site.nextUpdateDue)} · overdue` };
     if (days <= 7) return { cls: "status-soon", label: `${esc(site.nextUpdateDue)} · due soon` };
