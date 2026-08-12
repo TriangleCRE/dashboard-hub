@@ -198,20 +198,14 @@ a.btn-remove:hover{text-decoration:underline}
 #deleteConfirmYes{background:#b23b3b;color:#fff}
 #deleteConfirmYes:hover{background:#96302f}
 
-/* ---------- SOURCES INFO ICON + POPOVER (Tracker "Sources" column) ---------- */
-.info-icon{
-  width:22px;height:22px;border-radius:50%;flex:none;
-  border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);
-  font-size:12px;font-weight:700;font-family:inherit;cursor:default;
-  display:flex;align-items:center;justify-content:center;
-}
-.info-icon:hover, .info-icon:focus-visible{border-color:var(--green);color:var(--green-dark)}
-
-/* The popover itself is appended to <body> and positioned in JS
-   (initSourcesPopover() in public/tracker.html) rather than living next to
-   the icon in the DOM and floating via CSS — a plain CSS hover bubble
+/* ---------- SOURCES BUTTON + POPOVER (Tracker "Sources" column) ---------- */
+/* Click (not hover) opens/closes the popover — see .sources-btn in
+   tracker.html's own <style> for the trigger button itself. The popover is
+   appended to <body> and positioned in JS (wireSourcesPopovers() /
+   toggleSourcesPopover() in public/tracker.html) rather than living next
+   to the button in the DOM and floating there via CSS — a plain CSS bubble
    inside the table gets clipped by the table's own horizontal scroll
-   container, and centering it on the icon runs it off the right edge of
+   container, and centering it on the button runs it off the right edge of
    the screen for a column this close to the edge. Positioning in JS
    (position:fixed, clamped to the viewport, flips below when there's no
    room above) fixes both. */
