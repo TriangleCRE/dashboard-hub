@@ -95,10 +95,12 @@ since "start here" isn't a Tracker concept.
 ### Update checklist
 
 Under "Next update due" on the Tracker, each dashboard can carry a
-checklist of specific reports/tasks and their due dates — e.g. "Create/
-update the Aug 2026 report" due Sep 15, 2026. Click the checklist toggle
-to expand it, check items off as you do them, and add new ones as they
-come up (`+` in the add row, or type the label and press Enter).
+checklist of specific reports/tasks and their due dates — e.g. "Aug 2026
+report" due Sep 15, 2026. Just the thing itself, not "Create/update the
+Aug 2026 report" — checking an item off only ever means you created or
+updated it, so the verb in front was redundant. Click the checklist
+toggle to expand it, check items off as you do them, and add new ones as
+they come up (`+` in the add row, or type the label and press Enter).
 
 Checking an item off is what actually updates the dashboard's "Last
 updated" (to today) — adding, editing, or deleting an item doesn't, since
