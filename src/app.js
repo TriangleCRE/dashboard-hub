@@ -44,6 +44,7 @@ function parseDashboardBody(body) {
   const lastUpdated = typeof body.lastUpdated === "string" ? body.lastUpdated.trim() : "";
   const nextUpdateDue = typeof body.nextUpdateDue === "string" ? body.nextUpdateDue.trim() : "";
   const sources = typeof body.sources === "string" ? body.sources.trim() : "";
+  const instructions = typeof body.instructions === "string" ? body.instructions.trim() : "";
   // Every dashboard is owned by exactly one person for now (see
   // db.DEFAULT_OWNER) — an empty owner falls back to that rather than
   // being stored blank, so the Tracker's Owner column is never empty for
@@ -61,12 +62,13 @@ function parseDashboardBody(body) {
   if (nextUpdateDue.length > 40) return { error: "Next update due must be 40 characters or fewer." };
   if (owner.length > 80) return { error: "Owner must be 80 characters or fewer." };
   if (sources.length > 3000) return { error: "Sources must be 3,000 characters or fewer." };
+  if (instructions.length > 3000) return { error: "Instructions must be 3,000 characters or fewer." };
   if (walkthrough) {
     if (walkthrough.length > 500) return { error: "Walkthrough link must be 500 characters or fewer." };
     if (!isHttpUrl(walkthrough)) return { error: "Walkthrough link must start with http:// or https://" };
   }
 
-  return { fields: { name, url, desc, note, sitePassword, walkthrough, lastUpdated, nextUpdateDue, owner, sources } };
+  return { fields: { name, url, desc, note, sitePassword, walkthrough, lastUpdated, nextUpdateDue, owner, sources, instructions } };
 }
 
 // Validates a new checklist item (label required, due date optional — a

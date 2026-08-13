@@ -296,6 +296,37 @@ const PROPERTY_BASIS_RECORD_SOURCES = [
   "[V2_Property_Basis_Tracker_May_2026.xlsx](https://docs.google.com/spreadsheets/d/1EQEqtbrKFnqpw_l0ZD2j_j0dVmWwBT1T/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
 ].join("\n");
 
+// "How to update this dashboard" copy for the Tracker's Instructions
+// column (public/tracker.html) — same shape as the *_SOURCES constants
+// above, but describing the actual update workflow rather than where the
+// underlying data comes from. Most dashboards share one of two workflows
+// almost word-for-word, so those shared sentences are their own constants
+// rather than being retyped (and risking drifting out of sync) on every
+// dashboard that uses them.
+const ANYONE_CAN_UPDATE = "Anyone on the team can make this update.";
+const SARAH_ONLY_YARDI_PULL_INSTRUCTIONS =
+  "Only Sarah can make this update. Run the \"Yardi Pull Prompt\" feature on the dashboard, " +
+  "then paste Claude's response into the Claude Code session connected to this dashboard to commit it.";
+const SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS =
+  "Only Sarah can make updates, through Claude Code commands as needed.";
+
+const HARBOR_FREIGHT_BILLING_INSTRUCTIONS =
+  `Use the "Import a bill & reading with AI" feature on the dashboard to add each new bill and meter reading. ${ANYONE_CAN_UPDATE}`;
+// Hoy uses the exact same feature, on the exact same kind of dashboard.
+const HOY_BILLING_INSTRUCTIONS = HARBOR_FREIGHT_BILLING_INSTRUCTIONS;
+const N_LEWIS_BILLING_INSTRUCTIONS =
+  `Follow the first three steps on the dashboard to enter the bill invoice and meter readings. ${ANYONE_CAN_UPDATE}`;
+const PROPERTY_BASIS_RECORD_INSTRUCTIONS =
+  `Use the "Add Period with Claude" feature on the dashboard to add each new period. ${ANYONE_CAN_UPDATE}`;
+const DEAL_PIPELINE_INSTRUCTIONS =
+  `Use the "Add Property" feature on the dashboard to add a new deal. ${ANYONE_CAN_UPDATE}`;
+const PROPERTY_REPORTS_INSTRUCTIONS = SARAH_ONLY_YARDI_PULL_INSTRUCTIONS;
+const UTILITY_TRACKER_INSTRUCTIONS = SARAH_ONLY_YARDI_PULL_INSTRUCTIONS;
+const CAM_TRACKER_INSTRUCTIONS = SARAH_ONLY_YARDI_PULL_INSTRUCTIONS;
+const HOW_TO_CREATE_DASHBOARD_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
+const LOAN_DATABASE_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
+const PROPERTY_PORTFOLIO_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
+
 const SEED_DASHBOARDS = [
   {
     seedKey: "how-to-create-a-claude-dashboard",
@@ -308,6 +339,7 @@ const SEED_DASHBOARDS = [
     note: "",
     sitePassword: "2903",
     sources: "",
+    instructions: HOW_TO_CREATE_DASHBOARD_INSTRUCTIONS,
     walkthrough: "",
     pinned: true,
   },
@@ -322,6 +354,7 @@ const SEED_DASHBOARDS = [
     note: "",
     sitePassword: "2903",
     sources: PROPERTY_REPORTS_SOURCES,
+    instructions: PROPERTY_REPORTS_INSTRUCTIONS,
     walkthrough: "",
     checklist: PROPERTY_REPORTS_CHECKLIST,
   },
@@ -336,6 +369,7 @@ const SEED_DASHBOARDS = [
     note: "",
     sitePassword: "",
     sources: DEAL_PIPELINE_SOURCES,
+    instructions: DEAL_PIPELINE_INSTRUCTIONS,
     walkthrough: "",
   },
   {
@@ -349,6 +383,7 @@ const SEED_DASHBOARDS = [
     note: "",
     sitePassword: "",
     sources: HOY_BILLING_SOURCES,
+    instructions: HOY_BILLING_INSTRUCTIONS,
     walkthrough: "",
     checklist: HOY_BILLING_CHECKLIST,
   },
@@ -363,6 +398,7 @@ const SEED_DASHBOARDS = [
     note: "",
     sitePassword: "",
     sources: HARBOR_FREIGHT_BILLING_SOURCES,
+    instructions: HARBOR_FREIGHT_BILLING_INSTRUCTIONS,
     walkthrough: "",
     checklist: HARBOR_FREIGHT_BILLING_CHECKLIST,
   },
@@ -377,6 +413,7 @@ const SEED_DASHBOARDS = [
     note: "",
     sitePassword: "",
     sources: N_LEWIS_BILLING_SOURCES,
+    instructions: N_LEWIS_BILLING_INSTRUCTIONS,
     walkthrough: "https://www.loom.com/share/63547bf0c9954445af19ed6249d1b6d6",
     checklist: N_LEWIS_BILLING_CHECKLIST,
   },
@@ -391,6 +428,7 @@ const SEED_DASHBOARDS = [
     note: "",
     sitePassword: "",
     sources: LOAN_DATABASE_SOURCES,
+    instructions: LOAN_DATABASE_INSTRUCTIONS,
     walkthrough: "",
   },
 ];
@@ -490,6 +528,13 @@ function ensureSchema() {
       await query(`
         ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS sources TEXT NOT NULL DEFAULT '';
       `);
+      // The Tracker's Instructions column: how to actually perform an
+      // update on this dashboard (which feature to use on it, and who's
+      // allowed to). Same shape and same "add if missing" pattern as
+      // sources above.
+      await query(`
+        ALTER TABLE dashboards ADD COLUMN IF NOT EXISTS instructions TEXT NOT NULL DEFAULT '';
+      `);
       // The update checklist (public/tracker.html): a list of {id, label,
       // dueDate, done, completedDate} items you check off as you do each
       // update. Checking one off bumps last_updated and recomputes
@@ -506,14 +551,39 @@ function ensureSchema() {
         `UPDATE dashboards SET owner = $1 WHERE owner = ''`,
         [DEFAULT_OWNER]
       );
-      // The three migrations below only matter for a database that was
-      // seeded before these values existed (a production deploy that
-      // already has these 7 rows under their old defaults) — a genuinely
-      // fresh install gets all of this straight from SEED_DASHBOARDS below
-      // instead, so these are no-ops there. Each is guarded on the column
-      // still holding whatever the old default was, so none of them ever
+      // The migrations below only matter for a database that was seeded
+      // before these values existed (a production deploy that already has
+      // these 7 rows under their old defaults) — a genuinely fresh install
+      // gets all of this straight from SEED_DASHBOARDS below instead, so
+      // these are no-ops there. Each is guarded on the column still
+      // holding whatever the old default was, so none of them ever
       // overwrite a reassignment made since (from here, or from the
       // Tracker).
+
+      // Every seed_key-keyed migration below depends on that row's
+      // seed_key actually being set — which turned out not to be true for
+      // Hoy Billing Tool despite it being in SEED_DASHBOARDS from the
+      // start (most likely that row predates the seed_key column, or was
+      // re-added by hand at some point). Backfill it by name first, for
+      // every dashboard that has a seed_key, one row at a time (LIMIT 1
+      // via the subquery, so this can never try to stamp the same
+      // seed_key onto two rows and trip the column's UNIQUE constraint
+      // even if a genuine duplicate exists) — this also keeps the seed
+      // loop further down (which relies on ON CONFLICT (seed_key) to
+      // avoid re-inserting) from creating a duplicate row on this same
+      // cold start.
+      async function backfillSeedKeyByName(seedKey, name) {
+        await query(
+          `UPDATE dashboards SET seed_key = $1
+           WHERE seed_key IS NULL AND id = (
+             SELECT id FROM dashboards WHERE seed_key IS NULL AND name = $2 ORDER BY id LIMIT 1
+           )`,
+          [seedKey, name]
+        );
+      }
+      for (const s of SEED_DASHBOARDS) {
+        await backfillSeedKeyByName(s.seedKey, s.name);
+      }
 
       // Oliver Dahl owns the N Lewis billing tool, not the default owner.
       await query(
@@ -645,35 +715,9 @@ function ensureSchema() {
            AND sources = ''`,
         [PROPERTY_BASIS_RECORD_SOURCES]
       );
-      // Billing-cycle checklists for the three billing tools. These have
-      // been in SEED_DASHBOARDS with a stable seed_key since the start, so
-      // matching on seed_key alone should have been enough — but a report
-      // that Hoy's Sources weren't showing up despite this migration
-      // shipping means something kept it from matching that row (most
-      // likely: that row predates seed_key existing as a column, or was
-      // re-added by hand at some point and never got one). Backfill
-      // seed_key by name first — one row at a time (LIMIT 1 via the
-      // subquery), so this can never try to stamp the same seed_key onto
-      // two rows and trip the column's UNIQUE constraint even if a genuine
-      // duplicate exists — so the checklist/sources migrations below can
-      // keep matching on seed_key alone, and so the seed loop further down
-      // (which relies on ON CONFLICT (seed_key) to avoid re-inserting)
-      // doesn't insert a second row for it on this very cold start.
-      await query(`
-        UPDATE dashboards SET seed_key = 'hoy-billing-tool'
-        WHERE seed_key IS NULL AND id = (
-          SELECT id FROM dashboards WHERE seed_key IS NULL AND name = 'Hoy Billing Tool' ORDER BY id LIMIT 1
-        )`);
-      await query(`
-        UPDATE dashboards SET seed_key = 'harbor-freight-billing-tool'
-        WHERE seed_key IS NULL AND id = (
-          SELECT id FROM dashboards WHERE seed_key IS NULL AND name = 'Harbor Freight Billing Tool' ORDER BY id LIMIT 1
-        )`);
-      await query(`
-        UPDATE dashboards SET seed_key = '211-213-n-lewis-billing-tool'
-        WHERE seed_key IS NULL AND id = (
-          SELECT id FROM dashboards WHERE seed_key IS NULL AND name = '211/213 N Lewis Billing Tool' ORDER BY id LIMIT 1
-        )`);
+      // Billing-cycle checklists for the three billing tools (seed_key is
+      // now backfilled for all of them up top, so these can just match on
+      // it directly).
       await query(
         `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
          WHERE seed_key = 'hoy-billing-tool' AND checklist = '[]'::jsonb`,
@@ -725,6 +769,41 @@ function ensureSchema() {
            AND sources = $2`,
         [CAM_TRACKER_SOURCES, OLD_CAM_TRACKER_SOURCES]
       );
+      // One-time Instructions backfill (see the *_INSTRUCTIONS constants
+      // above) for every dashboard, guarded independently on Instructions
+      // still being blank so a note written by hand since is never
+      // overwritten. The seed_key-keyed dashboards can match on seed_key
+      // directly (it's backfilled for all of them up top); the ones added
+      // through the Hub match by name, same variants as their
+      // checklist/sources migrations above.
+      await query(`UPDATE dashboards SET instructions = $1 WHERE seed_key = 'how-to-create-a-claude-dashboard' AND instructions = ''`, [HOW_TO_CREATE_DASHBOARD_INSTRUCTIONS]);
+      await query(`UPDATE dashboards SET instructions = $1 WHERE seed_key = 'quarterly-property-reports' AND instructions = ''`, [PROPERTY_REPORTS_INSTRUCTIONS]);
+      await query(`UPDATE dashboards SET instructions = $1 WHERE seed_key = 'deal-pipeline' AND instructions = ''`, [DEAL_PIPELINE_INSTRUCTIONS]);
+      await query(`UPDATE dashboards SET instructions = $1 WHERE seed_key = 'hoy-billing-tool' AND instructions = ''`, [HOY_BILLING_INSTRUCTIONS]);
+      await query(`UPDATE dashboards SET instructions = $1 WHERE seed_key = 'harbor-freight-billing-tool' AND instructions = ''`, [HARBOR_FREIGHT_BILLING_INSTRUCTIONS]);
+      await query(`UPDATE dashboards SET instructions = $1 WHERE seed_key = '211-213-n-lewis-billing-tool' AND instructions = ''`, [N_LEWIS_BILLING_INSTRUCTIONS]);
+      await query(`UPDATE dashboards SET instructions = $1 WHERE seed_key = 'loan-database' AND instructions = ''`, [LOAN_DATABASE_INSTRUCTIONS]);
+      await query(
+        `UPDATE dashboards SET instructions = $1
+         WHERE name IN ('Property Basis Record', 'Property Basis Tracker', 'Triangle Property Basis Tracker')
+           AND instructions = ''`,
+        [PROPERTY_BASIS_RECORD_INSTRUCTIONS]
+      );
+      await query(
+        `UPDATE dashboards SET instructions = $1 WHERE name = 'Utility Usage Tracker' AND instructions = ''`,
+        [UTILITY_TRACKER_INSTRUCTIONS]
+      );
+      await query(
+        `UPDATE dashboards SET instructions = $1
+         WHERE name IN ('CAM, Taxes, & Insurance', 'CAM Insurance Taxes Tracker', 'CAM Insurance Tax Tracker')
+           AND instructions = ''`,
+        [CAM_TRACKER_INSTRUCTIONS]
+      );
+      await query(
+        `UPDATE dashboards SET instructions = $1
+         WHERE name IN ('Triangle Property Portfolio', 'Property Portfolio') AND instructions = ''`,
+        [PROPERTY_PORTFOLIO_INSTRUCTIONS]
+      );
       // "Site password" used to just be a convention for the freeform Note
       // field (e.g. note = "Site password: 2903"). Now that it's its own
       // column, pull any note already written that way into site_password
@@ -743,10 +822,10 @@ function ensureSchema() {
       for (let i = 0; i < SEED_DASHBOARDS.length; i++) {
         const s = SEED_DASHBOARDS[i];
         await query(
-          `INSERT INTO dashboards (seed_key, name, url, description, note, site_password, walkthrough, last_updated, next_update_due, owner, sources, checklist, sort_order, pinned)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14)
+          `INSERT INTO dashboards (seed_key, name, url, description, note, site_password, walkthrough, last_updated, next_update_due, owner, sources, instructions, checklist, sort_order, pinned)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, $14, $15)
            ON CONFLICT (seed_key) DO NOTHING`,
-          [s.seedKey, s.name, s.url, s.description, s.note, s.sitePassword, s.walkthrough, s.lastUpdated, s.nextUpdateDue, s.owner, s.sources, JSON.stringify(s.checklist || []), i, Boolean(s.pinned)]
+          [s.seedKey, s.name, s.url, s.description, s.note, s.sitePassword, s.walkthrough, s.lastUpdated, s.nextUpdateDue, s.owner, s.sources, s.instructions || "", JSON.stringify(s.checklist || []), i, Boolean(s.pinned)]
         );
       }
     })().catch((err) => {
@@ -772,6 +851,7 @@ function rowToDashboard(row) {
     nextUpdateDue: row.next_update_due,
     owner: row.owner,
     sources: row.sources,
+    instructions: row.instructions,
     checklist: row.checklist || [],
     pinned: row.pinned,
   };
@@ -795,10 +875,10 @@ async function createDashboard(fields) {
   );
   const nextOrder = orderRows[0].next_order;
   const { rows } = await query(
-    `INSERT INTO dashboards (name, url, description, note, site_password, walkthrough, last_updated, next_update_due, owner, sources, sort_order)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `INSERT INTO dashboards (name, url, description, note, site_password, walkthrough, last_updated, next_update_due, owner, sources, instructions, sort_order)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
-    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, fields.nextUpdateDue, fields.owner, fields.sources, nextOrder]
+    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, fields.nextUpdateDue, fields.owner, fields.sources, fields.instructions, nextOrder]
   );
   return rowToDashboard(rows[0]);
 }
@@ -807,10 +887,10 @@ async function updateDashboard(id, fields) {
   await ensureSchema();
   const { rows } = await query(
     `UPDATE dashboards
-     SET name = $1, url = $2, description = $3, note = $4, site_password = $5, walkthrough = $6, last_updated = $7, next_update_due = $8, owner = $9, sources = $10, updated_at = now()
-     WHERE id = $11
+     SET name = $1, url = $2, description = $3, note = $4, site_password = $5, walkthrough = $6, last_updated = $7, next_update_due = $8, owner = $9, sources = $10, instructions = $11, updated_at = now()
+     WHERE id = $12
      RETURNING *`,
-    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, fields.nextUpdateDue, fields.owner, fields.sources, id]
+    [fields.name, fields.url, fields.desc, fields.note, fields.sitePassword, fields.walkthrough, fields.lastUpdated, fields.nextUpdateDue, fields.owner, fields.sources, fields.instructions, id]
   );
   return rows[0] ? rowToDashboard(rows[0]) : null;
 }
