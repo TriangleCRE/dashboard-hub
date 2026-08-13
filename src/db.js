@@ -74,24 +74,24 @@ function checklistItem(label, dueDate) {
 }
 
 const PROPERTY_REPORTS_CHECKLIST = [
-  checklistItem("Create/update the Aug 2026 report", "2026-09-15"),
-  checklistItem("Create/update the Sep 2026 report", "2026-10-15"),
-  checklistItem("Create/update the Oct 2026 report", "2026-11-16"),
-  checklistItem("Create/update the Nov 2026 report", "2026-12-15"),
-  checklistItem("Create/update the Dec 2026 report", "2027-01-15"),
-  checklistItem("Create/update the Jan 2027 report", "2027-02-15"),
-  checklistItem("Create/update the Feb 2027 report", "2027-03-15"),
-  checklistItem("Create/update the Mar 2027 report", "2027-04-15"),
-  checklistItem("Create/update the Apr 2027 report", "2027-05-17"),
-  checklistItem("Create/update the May 2027 report", "2027-06-15"),
-  checklistItem("Create/update the Jun 2027 report", "2027-07-15"),
-  checklistItem("Create/update the Jul 2027 report", "2027-08-16"),
-  checklistItem("Create/update the Q3 2026 (Jul–Sep) report", "2026-10-19"),
-  checklistItem("Create/update the Q4 2026 (Oct–Dec) report", "2027-01-27"),
-  checklistItem("Create/update the Q1 2027 (Jan–Mar) report", "2027-04-19"),
-  checklistItem("Create/update the Q2 2027 (Apr–Jun) report", "2027-07-19"),
-  checklistItem("Create/update the Q3 2027 (Jul–Sep) report", "2027-10-18"),
-  checklistItem("Create/update the FY2026 (Jan–Dec) report", "2027-02-24"),
+  checklistItem("Aug 2026 report", "2026-09-15"),
+  checklistItem("Sep 2026 report", "2026-10-15"),
+  checklistItem("Oct 2026 report", "2026-11-16"),
+  checklistItem("Nov 2026 report", "2026-12-15"),
+  checklistItem("Dec 2026 report", "2027-01-15"),
+  checklistItem("Jan 2027 report", "2027-02-15"),
+  checklistItem("Feb 2027 report", "2027-03-15"),
+  checklistItem("Mar 2027 report", "2027-04-15"),
+  checklistItem("Apr 2027 report", "2027-05-17"),
+  checklistItem("May 2027 report", "2027-06-15"),
+  checklistItem("Jun 2027 report", "2027-07-15"),
+  checklistItem("Jul 2027 report", "2027-08-16"),
+  checklistItem("Q3 2026 (Jul–Sep) report", "2026-10-19"),
+  checklistItem("Q4 2026 (Oct–Dec) report", "2027-01-27"),
+  checklistItem("Q1 2027 (Jan–Mar) report", "2027-04-19"),
+  checklistItem("Q2 2027 (Apr–Jun) report", "2027-07-19"),
+  checklistItem("Q3 2027 (Jul–Sep) report", "2027-10-18"),
+  checklistItem("FY2026 (Jan–Dec) report", "2027-02-24"),
 ];
 
 // One-time checklist seed for "Utility Usage Tracker" (see the migration
@@ -105,18 +105,18 @@ const PROPERTY_REPORTS_CHECKLIST = [
 // ~8th–10th" guidance became the 15th instead, to line up with every
 // other monthly checklist in this file).
 const UTILITY_TRACKER_CHECKLIST = [
-  checklistItem("Update Aug 2026 usage", "2026-09-15"),
-  checklistItem("Update Sep 2026 usage", "2026-10-15"),
-  checklistItem("Update Oct 2026 usage", "2026-11-16"),
-  checklistItem("Update Nov 2026 usage", "2026-12-15"),
-  checklistItem("Update Dec 2026 usage", "2027-01-15"),
-  checklistItem("Update Jan 2027 usage", "2027-02-15"),
-  checklistItem("Update Feb 2027 usage", "2027-03-15"),
-  checklistItem("Update Mar 2027 usage", "2027-04-15"),
-  checklistItem("Update Apr 2027 usage", "2027-05-17"),
-  checklistItem("Update May 2027 usage", "2027-06-15"),
-  checklistItem("Update Jun 2027 usage", "2027-07-15"),
-  checklistItem("Update Jul 2027 usage", "2027-08-16"),
+  checklistItem("Aug 2026 usage", "2026-09-15"),
+  checklistItem("Sep 2026 usage", "2026-10-15"),
+  checklistItem("Oct 2026 usage", "2026-11-16"),
+  checklistItem("Nov 2026 usage", "2026-12-15"),
+  checklistItem("Dec 2026 usage", "2027-01-15"),
+  checklistItem("Jan 2027 usage", "2027-02-15"),
+  checklistItem("Feb 2027 usage", "2027-03-15"),
+  checklistItem("Mar 2027 usage", "2027-04-15"),
+  checklistItem("Apr 2027 usage", "2027-05-17"),
+  checklistItem("May 2027 usage", "2027-06-15"),
+  checklistItem("Jun 2027 usage", "2027-07-15"),
+  checklistItem("Jul 2027 usage", "2027-08-16"),
 ];
 
 // Superseded by OLD_UTILITY_TRACKER_SOURCES_V2, then by the bracket-linked
@@ -160,20 +160,20 @@ const UTILITY_TRACKER_SOURCES = [
 // the next Monday when the 15th lands on a weekend — same rule and same
 // weekday shifts as Property Reports' monthly items.
 const PROPERTY_BASIS_TRACKER_CHECKLIST = [
-  checklistItem("Create/update the Jul 2026 Basis Record", "2026-08-17"),
-  checklistItem("Create/update the Aug 2026 Basis Record", "2026-09-15"),
-  checklistItem("Create/update the Sep 2026 Basis Record", "2026-10-15"),
-  checklistItem("Create/update the Oct 2026 Basis Record", "2026-11-16"),
-  checklistItem("Create/update the Nov 2026 Basis Record", "2026-12-15"),
-  checklistItem("Create/update the Dec 2026 Basis Record", "2027-01-15"),
-  checklistItem("Create/update the Jan 2027 Basis Record", "2027-02-15"),
-  checklistItem("Create/update the Feb 2027 Basis Record", "2027-03-15"),
-  checklistItem("Create/update the Mar 2027 Basis Record", "2027-04-15"),
-  checklistItem("Create/update the Apr 2027 Basis Record", "2027-05-17"),
-  checklistItem("Create/update the May 2027 Basis Record", "2027-06-15"),
-  checklistItem("Create/update the Jun 2027 Basis Record", "2027-07-15"),
-  checklistItem("Create/update the Jul 2027 Basis Record", "2027-08-16"),
-  checklistItem("Create/update the Aug 2027 Basis Record", "2027-09-15"),
+  checklistItem("Jul 2026 Basis Record", "2026-08-17"),
+  checklistItem("Aug 2026 Basis Record", "2026-09-15"),
+  checklistItem("Sep 2026 Basis Record", "2026-10-15"),
+  checklistItem("Oct 2026 Basis Record", "2026-11-16"),
+  checklistItem("Nov 2026 Basis Record", "2026-12-15"),
+  checklistItem("Dec 2026 Basis Record", "2027-01-15"),
+  checklistItem("Jan 2027 Basis Record", "2027-02-15"),
+  checklistItem("Feb 2027 Basis Record", "2027-03-15"),
+  checklistItem("Mar 2027 Basis Record", "2027-04-15"),
+  checklistItem("Apr 2027 Basis Record", "2027-05-17"),
+  checklistItem("May 2027 Basis Record", "2027-06-15"),
+  checklistItem("Jun 2027 Basis Record", "2027-07-15"),
+  checklistItem("Jul 2027 Basis Record", "2027-08-16"),
+  checklistItem("Aug 2027 Basis Record", "2027-09-15"),
 ];
 
 // Superseded by the bracket-linked PROPERTY_REPORTS_SOURCES below — kept
@@ -205,7 +205,7 @@ const PROPERTY_REPORTS_SOURCES = [
 // add the 2027 item and beyond from the Tracker once its own due date is
 // known.
 const CAM_TRACKER_CHECKLIST = [
-  checklistItem("Update the 2026 CAM, Taxes, & Insurance tracker", "2027-02-24"),
+  checklistItem("2026 CAM, Taxes, & Insurance tracker", "2027-02-24"),
 ];
 
 // Superseded by the bracket-linked CAM_TRACKER_SOURCES below — kept for
@@ -241,13 +241,13 @@ const LOAN_DATABASE_SOURCES = [
 // not derived.
 function bimonthlyBillingChecklist(){
   return [
-    checklistItem("Create/update the May '26 – Jul '26 bill", "2026-08-01"),
-    checklistItem("Create/update the Jul '26 – Sep '26 bill", "2026-10-01"),
-    checklistItem("Create/update the Sep '26 – Nov '26 bill", "2026-12-01"),
-    checklistItem("Create/update the Nov '26 – Jan '27 bill", "2027-02-01"),
-    checklistItem("Create/update the Jan '27 – Mar '27 bill", "2027-04-01"),
-    checklistItem("Create/update the Mar '27 – May '27 bill", "2027-06-01"),
-    checklistItem("Create/update the May '27 – Jul '27 bill", "2027-08-01"),
+    checklistItem("May '26 – Jul '26 bill", "2026-08-01"),
+    checklistItem("Jul '26 – Sep '26 bill", "2026-10-01"),
+    checklistItem("Sep '26 – Nov '26 bill", "2026-12-01"),
+    checklistItem("Nov '26 – Jan '27 bill", "2027-02-01"),
+    checklistItem("Jan '27 – Mar '27 bill", "2027-04-01"),
+    checklistItem("Mar '27 – May '27 bill", "2027-06-01"),
+    checklistItem("May '27 – Jul '27 bill", "2027-08-01"),
   ];
 }
 const HOY_BILLING_CHECKLIST = bimonthlyBillingChecklist();
@@ -256,20 +256,20 @@ const N_LEWIS_BILLING_CHECKLIST = bimonthlyBillingChecklist();
 // Monthly billing cycle for Harbor Freight Billing Tool — a bill covering
 // one month gets updated on the 1st of the following month.
 const HARBOR_FREIGHT_BILLING_CHECKLIST = [
-  checklistItem("Create/update the May '26 – Jun '26 bill", "2026-07-01"),
-  checklistItem("Create/update the Jun '26 – Jul '26 bill", "2026-08-01"),
-  checklistItem("Create/update the Jul '26 – Aug '26 bill", "2026-09-01"),
-  checklistItem("Create/update the Aug '26 – Sep '26 bill", "2026-10-01"),
-  checklistItem("Create/update the Sep '26 – Oct '26 bill", "2026-11-01"),
-  checklistItem("Create/update the Oct '26 – Nov '26 bill", "2026-12-01"),
-  checklistItem("Create/update the Nov '26 – Dec '26 bill", "2027-01-01"),
-  checklistItem("Create/update the Dec '26 – Jan '27 bill", "2027-02-01"),
-  checklistItem("Create/update the Jan '27 – Feb '27 bill", "2027-03-01"),
-  checklistItem("Create/update the Feb '27 – Mar '27 bill", "2027-04-01"),
-  checklistItem("Create/update the Mar '27 – Apr '27 bill", "2027-05-01"),
-  checklistItem("Create/update the Apr '27 – May '27 bill", "2027-06-01"),
-  checklistItem("Create/update the May '27 – Jun '27 bill", "2027-07-01"),
-  checklistItem("Create/update the Jun '27 – Jul '27 bill", "2027-08-01"),
+  checklistItem("May '26 – Jun '26 bill", "2026-07-01"),
+  checklistItem("Jun '26 – Jul '26 bill", "2026-08-01"),
+  checklistItem("Jul '26 – Aug '26 bill", "2026-09-01"),
+  checklistItem("Aug '26 – Sep '26 bill", "2026-10-01"),
+  checklistItem("Sep '26 – Oct '26 bill", "2026-11-01"),
+  checklistItem("Oct '26 – Nov '26 bill", "2026-12-01"),
+  checklistItem("Nov '26 – Dec '26 bill", "2027-01-01"),
+  checklistItem("Dec '26 – Jan '27 bill", "2027-02-01"),
+  checklistItem("Jan '27 – Feb '27 bill", "2027-03-01"),
+  checklistItem("Feb '27 – Mar '27 bill", "2027-04-01"),
+  checklistItem("Mar '27 – Apr '27 bill", "2027-05-01"),
+  checklistItem("Apr '27 – May '27 bill", "2027-06-01"),
+  checklistItem("May '27 – Jun '27 bill", "2027-07-01"),
+  checklistItem("Jun '27 – Jul '27 bill", "2027-08-01"),
 ];
 
 const N_LEWIS_BILLING_SOURCES = [
@@ -475,6 +475,48 @@ async function migrateUtilityTrackerChecklistFormat() {
       await query(
         `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2, updated_at = now() WHERE id = $3`,
         [JSON.stringify(updated), computeNextUpdateDue(updated), row.id]
+      );
+    }
+  }
+}
+
+// Every checklist item above used to read "Create/update the X" / "Update
+// the X" / "Update X" — the verb was redundant, since checking an item off
+// only ever means "I created/updated X" in the first place. Requested
+// directly: just list X itself (e.g. "May '26 – Jul '26 bill"), across
+// every dashboard's checklist, not only the ones seeded above (a
+// hand-added item on some other dashboard could happen to start with one
+// of these same words too, and stripping it there is just as correct).
+// Checked longest-prefix-first so "Update the X" doesn't get only its
+// "Update " shaved off, leaving a stray "the X".
+const CHECKLIST_LABEL_PREFIXES = ["Create/update the ", "Update the ", "Update "];
+
+function stripChecklistLabelPrefix(label) {
+  const prefix = CHECKLIST_LABEL_PREFIXES.find((p) => label.startsWith(p));
+  return prefix ? label.slice(prefix.length) : label;
+}
+
+// Runs across every dashboard, not just ones matched by seed_key/name —
+// there's no "which dashboards have this old format" list to key off here,
+// unlike the more targeted migrations above. Guarded per-item on the label
+// actually starting with one of the prefixes, so a hand-typed item that
+// never had one (or a row already migrated) is left untouched, and this
+// is a no-op the next time it runs.
+async function migrateChecklistLabelPrefixes() {
+  const { rows } = await query(`SELECT id, checklist FROM dashboards WHERE checklist != '[]'::jsonb`);
+  for (const row of rows) {
+    const checklist = row.checklist || [];
+    let changed = false;
+    const updated = checklist.map((item) => {
+      const newLabel = stripChecklistLabelPrefix(item.label);
+      if (newLabel === item.label) return item;
+      changed = true;
+      return { ...item, label: newLabel };
+    });
+    if (changed) {
+      await query(
+        `UPDATE dashboards SET checklist = $1::jsonb, updated_at = now() WHERE id = $2`,
+        [JSON.stringify(updated), row.id]
       );
     }
   }
@@ -804,6 +846,13 @@ function ensureSchema() {
          WHERE name IN ('Triangle Property Portfolio', 'Property Portfolio') AND instructions = ''`,
         [PROPERTY_PORTFOLIO_INSTRUCTIONS]
       );
+      // Strips the redundant "Create/update the "/"Update the "/"Update "
+      // verb phrase off every checklist item's label (see
+      // CHECKLIST_LABEL_PREFIXES above) — runs last, after every other
+      // checklist migration above has had a chance to seed/fix labels, so
+      // it's cleaning up whatever the final label text actually is rather
+      // than racing any of them.
+      await migrateChecklistLabelPrefixes();
       // "Site password" used to just be a convention for the freeform Note
       // field (e.g. note = "Site password: 2903"). Now that it's its own
       // column, pull any note already written that way into site_password
