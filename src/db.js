@@ -41,17 +41,32 @@ function formatShortDate(date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+// Same "As needed" check as isAsNeeded() in public/tracker.html — kept in
+// sync there rather than shared, since this is the only other place that
+// needs it.
+function isAsNeeded(value) {
+  return (value || "").trim().toLowerCase() === "as needed";
+}
+
 // A dashboard's "next update due" is derived from its checklist once it
 // has one (see the checklist functions below): the soonest due date among
 // items not yet checked off. Items with no due date, or a due date that
 // isn't a real date (both allowed — a checklist can track "as needed"
-// items too), just don't count toward this.
-function computeNextUpdateDue(checklist) {
+// items too), just don't count toward this — and when none of them do,
+// an "As needed" dashboard stays "As needed" (passed in as
+// `currentValue`) rather than that getting blanked out to "Not set". An
+// "As needed" dashboard has no real schedule to begin with, so jotting
+// down each new deal/loan/property as it comes up (with no due date, the
+// common case) shouldn't read as if adding a checklist broke it. A
+// checklist item that actually has a real due date still promotes it to
+// that date, same as any other dashboard.
+function computeNextUpdateDue(checklist, currentValue) {
   const upcoming = (checklist || [])
     .filter((item) => !item.done && item.dueDate && !isNaN(Date.parse(item.dueDate)))
     .map((item) => Date.parse(item.dueDate))
     .sort((a, b) => a - b);
-  return upcoming.length ? formatShortDate(new Date(upcoming[0])) : "";
+  if (upcoming.length) return formatShortDate(new Date(upcoming[0]));
+  return isAsNeeded(currentValue) ? currentValue : "";
 }
 
 // The dashboards this hub shipped with, before it had a database. Seeded
@@ -981,17 +996,24 @@ async function deleteDashboard(id) {
    (see computeNextUpdateDue above) before writing back.
    ========================================================================= */
 
-async function getChecklist(id) {
-  const { rows } = await query(`SELECT checklist FROM dashboards WHERE id = $1`, [id]);
-  return rows[0] ? rows[0].checklist || [] : null;
+// Also hands back the row's current next_update_due, not just its
+// checklist — persistChecklist() needs it to decide whether an "As
+// needed" dashboard should stay "As needed" (see computeNextUpdateDue
+// above).
+async function getChecklistState(id) {
+  const { rows } = await query(`SELECT checklist, next_update_due FROM dashboards WHERE id = $1`, [id]);
+  if (!rows[0]) return null;
+  return { checklist: rows[0].checklist || [], nextUpdateDue: rows[0].next_update_due };
 }
 
 // Writes back a dashboard's whole checklist plus the next_update_due that
-// falls out of it. `justCompleted` also bumps last_updated to today — only
-// checking an item off counts as "the update happened"; adding, editing,
-// or deleting an item, or un-checking one, doesn't.
-async function persistChecklist(id, checklist, justCompleted) {
-  const nextUpdateDue = computeNextUpdateDue(checklist);
+// falls out of it (see computeNextUpdateDue — `currentValue` is what lets
+// it keep "As needed" instead of blanking it out). `justCompleted` also
+// bumps last_updated to today — only checking an item off counts as "the
+// update happened"; adding, editing, or deleting an item, or un-checking
+// one, doesn't.
+async function persistChecklist(id, checklist, currentValue, justCompleted) {
+  const nextUpdateDue = computeNextUpdateDue(checklist, currentValue);
   const { rows } = justCompleted
     ? await query(
         `UPDATE dashboards
@@ -1012,13 +1034,13 @@ async function persistChecklist(id, checklist, justCompleted) {
 
 async function addChecklistItem(id, { label, dueDate }) {
   await ensureSchema();
-  const checklist = await getChecklist(id);
-  if (checklist === null) return null;
-  if (checklist.length >= 200) {
+  const state = await getChecklistState(id);
+  if (state === null) return null;
+  if (state.checklist.length >= 200) {
     throw new Error("This dashboard's checklist is full (200 items) — remove some before adding more.");
   }
   const item = { id: crypto.randomUUID(), label, dueDate, done: false, completedDate: "" };
-  return persistChecklist(id, [...checklist, item]);
+  return persistChecklist(id, [...state.checklist, item], state.nextUpdateDue);
 }
 
 // `patch` may include any of label/dueDate/done. Checking an item that's
@@ -1029,10 +1051,10 @@ async function addChecklistItem(id, { label, dueDate }) {
 // besides leave everything unchanged.
 async function updateChecklistItem(id, itemId, patch) {
   await ensureSchema();
-  const checklist = await getChecklist(id);
-  if (checklist === null) return null;
+  const state = await getChecklistState(id);
+  if (state === null) return null;
   let justCompleted = false;
-  const updated = checklist.map((item) => {
+  const updated = state.checklist.map((item) => {
     if (item.id !== itemId) return item;
     const next = { ...item };
     if (typeof patch.label === "string") next.label = patch.label;
@@ -1044,14 +1066,14 @@ async function updateChecklistItem(id, itemId, patch) {
     }
     return next;
   });
-  return persistChecklist(id, updated, justCompleted);
+  return persistChecklist(id, updated, state.nextUpdateDue, justCompleted);
 }
 
 async function deleteChecklistItem(id, itemId) {
   await ensureSchema();
-  const checklist = await getChecklist(id);
-  if (checklist === null) return null;
-  return persistChecklist(id, checklist.filter((item) => item.id !== itemId));
+  const state = await getChecklistState(id);
+  if (state === null) return null;
+  return persistChecklist(id, state.checklist.filter((item) => item.id !== itemId), state.nextUpdateDue);
 }
 
 module.exports = {

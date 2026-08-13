@@ -112,6 +112,14 @@ checklist instead. A dashboard with no checklist yet keeps the plain
 editable field (handy for "As needed" dashboards, or a quick hand-typed
 date that doesn't need a whole checklist).
 
+An "As needed" dashboard can start a checklist too — handy for jotting
+down each new deal/loan/property/lease as it comes up, with no due date
+since there's no schedule to hang one on. Adding an item like that
+doesn't blank out "As needed" (`computeNextUpdateDue()` in `src/db.js`
+keeps it as-is whenever nothing in the checklist has a real due date) —
+it only gets promoted to a real date once some item actually has one, the
+same as it would for any other dashboard.
+
 Deal Pipeline, Loan Database, Triangle Property Portfolio, Triangle Lease
 Book, and How to Create a Claude Dashboard are set to "As needed" — they
 get updated as new deals/loans/properties/leases show up or the guide
