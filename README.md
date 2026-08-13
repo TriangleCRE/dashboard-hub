@@ -112,10 +112,11 @@ checklist instead. A dashboard with no checklist yet keeps the plain
 editable field (handy for "As needed" dashboards, or a quick hand-typed
 date that doesn't need a whole checklist).
 
-Deal Pipeline, Loan Database, Triangle Property Portfolio, and How to
-Create a Claude Dashboard are set to "As needed" — they get updated as new
-deals/loans/properties show up or the guide needs a tweak, not on a
-schedule. The Tracker's "Show" filter has options for both ends of that —
+Deal Pipeline, Loan Database, Triangle Property Portfolio, Triangle Lease
+Book, and How to Create a Claude Dashboard are set to "As needed" — they
+get updated as new deals/loans/properties/leases show up or the guide
+needs a tweak, not on a schedule. The Tracker's "Show" filter has options
+for both ends of that —
 "As needed" and "Has a set update date" — alongside Overdue/Due soon. "As
 needed" also gets its own subtly different status-pill color
 (`.status-asneeded`) rather than reading as the same grey as "Not set" —
@@ -163,8 +164,9 @@ parameter-heavy GIS links in particular; a bare `https://...` still links
 too, just with the URL itself as the visible text. Quarterly Property
 Reports, Deal Pipeline, Loan Database, Utility Usage Tracker, CAM, Taxes,
 & Insurance, Property Basis Record, Hoy Billing Tool, Harbor Freight
-Billing Tool, and 211/213 N Lewis Billing Tool all have Sources filled in
-this way. Click a "Sources"/"Instructions" button to open its popover —
+Billing Tool, 211/213 N Lewis Billing Tool, and Triangle Lease Book all
+have Sources filled in this way. Click a "Sources"/"Instructions" button
+to open its popover —
 it's click-to-toggle, not hover, so it stays open while you scroll to a
 link and click it. The pencil that edits the list lives inside the
 popover itself (next to the label at the top), not out in the table —
@@ -180,8 +182,8 @@ can update either say so and point at the "Yardi Pull Prompt" feature
 Insurance — Claude's response to that prompt gets pasted into the Claude
 Code session connected to the dashboard to commit the update) or just note
 that updates go through Claude Code commands as needed (How to Create a
-Claude Dashboard, Loan Database, Triangle Property Portfolio). See the
-`*_INSTRUCTIONS` constants in `src/db.js`.
+Claude Dashboard, Loan Database, Triangle Property Portfolio, Triangle
+Lease Book). See the `*_INSTRUCTIONS` constants in `src/db.js`.
 
 Dashboards added through the Hub (rather than shipped in `SEED_DASHBOARDS`)
 have no `seed_key`, so a migration seeding one of these has to match on

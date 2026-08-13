@@ -234,6 +234,11 @@ const LOAN_DATABASE_SOURCES = [
   "[Loan Documents folder](https://drive.google.com/drive/folders/1pGPaJ8q-qMXJfu_R2xMnVYNcr55RDNPZ?usp=sharing)",
 ].join("\n");
 
+const TRIANGLE_LEASE_BOOK_SOURCES = [
+  "Lease abstracts and PDFs from [Yardi Breeze](https://100115409.breeze.cafe/content/#/app/dashboard)",
+  "Also in this [Google Drive folder](https://drive.google.com/drive/folders/1PtLPxWVypvKgLZVuw4q0EYoaqKQtM0ix?usp=sharing)",
+].join("\n");
+
 // Bimonthly billing cycle for Hoy Billing Tool and 211/213 N Lewis Billing
 // Tool — both on the exact same cadence (a bill covering a 2-month period
 // gets updated on the 1st of the month after that period ends). Neither
@@ -326,6 +331,7 @@ const CAM_TRACKER_INSTRUCTIONS = SARAH_ONLY_YARDI_PULL_INSTRUCTIONS;
 const HOW_TO_CREATE_DASHBOARD_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const LOAN_DATABASE_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const PROPERTY_PORTFOLIO_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
+const TRIANGLE_LEASE_BOOK_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 
 const SEED_DASHBOARDS = [
   {
@@ -429,6 +435,20 @@ const SEED_DASHBOARDS = [
     sitePassword: "",
     sources: LOAN_DATABASE_SOURCES,
     instructions: LOAN_DATABASE_INSTRUCTIONS,
+    walkthrough: "",
+  },
+  {
+    seedKey: "triangle-lease-book",
+    name: "Triangle Lease Book",
+    description: "All tenant leases by property — rent roll, renewal options, and dated flags in one place.",
+    url: "https://triangle-lease-book.vercel.app/",
+    lastUpdated: "Aug 13, 2026",
+    nextUpdateDue: "As needed",
+    owner: DEFAULT_OWNER,
+    note: "",
+    sitePassword: "2903",
+    sources: TRIANGLE_LEASE_BOOK_SOURCES,
+    instructions: TRIANGLE_LEASE_BOOK_INSTRUCTIONS,
     walkthrough: "",
   },
 ];
