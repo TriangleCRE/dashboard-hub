@@ -77,6 +77,7 @@ function initDashboardModal(onSaved) {
   const fieldOwner = document.getElementById("fieldOwner");
   const fieldDesc = document.getElementById("fieldDesc");
   const fieldSources = document.getElementById("fieldSources");
+  const fieldInstructions = document.getElementById("fieldInstructions");
   const fieldSitePassword = document.getElementById("fieldSitePassword");
   const fieldNote = document.getElementById("fieldNote");
   const fieldWalkthrough = document.getElementById("fieldWalkthrough");
@@ -133,6 +134,7 @@ function initDashboardModal(onSaved) {
     fieldOwner.value = site.owner || DEFAULT_OWNER;
     fieldDesc.value = site.desc || "";
     fieldSources.value = site.sources || "";
+    fieldInstructions.value = site.instructions || "";
     fieldSitePassword.value = site.sitePassword || "";
     fieldNote.value = site.note || "";
     fieldWalkthrough.value = site.walkthrough || "";
@@ -200,6 +202,7 @@ function initDashboardModal(onSaved) {
     const owner = fieldOwner.value.trim();
     const desc = fieldDesc.value.trim();
     const sources = fieldSources.value.trim();
+    const instructions = fieldInstructions.value.trim();
     const sitePassword = fieldSitePassword.value.trim();
     const note = fieldNote.value.trim();
     const walkthrough = fieldWalkthrough.value.trim();
@@ -210,7 +213,7 @@ function initDashboardModal(onSaved) {
       return showModalError("The walkthrough link must be a valid URL, starting with http:// or https://");
     }
 
-    const record = { name, url, lastUpdated, nextUpdateDue, owner, desc, sources, sitePassword, note, walkthrough };
+    const record = { name, url, lastUpdated, nextUpdateDue, owner, desc, sources, instructions, sitePassword, note, walkthrough };
 
     submitAddDashboard.disabled = true;
     try {

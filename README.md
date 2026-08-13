@@ -35,8 +35,8 @@ Vercel project). There's no code to edit anymore:
 - The **"+ Add Dashboard"** button (on either page, see below) adds a new
   card/row.
 - The **pencil icon** on any card/row edits its name, URL, last-updated
-  date, next-update-due date, owner, description, sources, note, site
-  password, and walkthrough link.
+  date, next-update-due date, owner, description, sources, instructions,
+  note, site password, and walkthrough link.
 - The **Remove** button deletes it.
 
 Any team member can do all three. Because they all go through the
@@ -57,8 +57,8 @@ There are two pages over the same underlying dashboard list:
   dashboard.
 - **`/tracker` — the Tracker.** A table-of-contents view for keeping the
   hub itself maintained: when each dashboard was last updated, when it's
-  next due, who owns it, and what sources feed an update (click the
-  "Sources" button to see them).
+  next due, who owns it, what sources feed an update, and how to actually
+  make one (click the "Sources"/"Instructions" buttons to see them).
 
 Both pages are just different renderings of the same `/api/dashboards` data
 and share one Add/Edit modal (`public/shared.js`) — there's no separate
@@ -66,15 +66,19 @@ sync step to write. Add a dashboard on either page and it appears on both;
 edit "Last updated" (or anything else) from the Tracker and the Hub reflects
 it on its next load, because both pages read and write the exact same row.
 
-On the Tracker, Owner, Last updated, Next update due, and Sources are also
-editable right in the table — click a value (or tab to it and press Enter)
-to turn it into a field, save with Enter/blur (Sources gets an explicit
-Save/Cancel since it's multi-line), or back out with Escape. The pencil
-icon in the last column still opens the full Add/Edit modal for everything
-else (name, URL, description, site password, note, walkthrough link). The
-Add/Edit modal itself is grouped into "Shown on the Hub" and "Tracked on
-the Tracker" sections, so adding a dashboard from either page makes clear
-you're filling out both at once.
+On the Tracker, Owner, Last updated, Next update due, Sources, and
+Instructions are also editable right in the table — click a value (or tab
+to it and press Enter) to turn it into a field, save with Enter/blur
+(Sources and Instructions get an explicit Save/Cancel since they're
+multi-line), or back out with Escape. The pencil icon in the last column
+still opens the full Add/Edit modal for everything else (name, URL,
+description, site password, note, walkthrough link). The Add/Edit modal
+itself is grouped into "Shown on the Hub" and "Tracked on the Tracker"
+sections, so adding a dashboard from either page makes clear you're
+filling out both at once — and includes both Sources and Instructions as
+fields, so editing a dashboard through that modal never wipes out either
+one (they'd otherwise get reset to blank on save, since the modal submits
+the dashboard's whole record).
 
 Every dashboard currently has exactly one owner — the one person who can
 edit it in Claude Code. For now that's Sarah Dahl for everything except the
@@ -145,34 +149,56 @@ backfills `seed_key` by name first, one row at a time, before the
 checklist/sources migrations run, so this can't recur and can't create a
 duplicate row on the same cold start either.
 
-Sources supports up to 3,000 characters and can hold several lines with
-multiple links — the Sources popover on the Tracker turns any `http(s)://`
-URL in it into a clickable link (`linkifySources()` in `public/tracker.html`),
-so a Sources note doesn't have to stay short to include real links to the
-GIS sites, Yardi Breeze, Google Drive/Sheets, etc. that a dashboard's
-update actually draws from. Write `[a short label](https://...)` and the
-label becomes the link's visible text instead of the raw URL — handy for
-the long, parameter-heavy GIS links in particular; a bare `https://...`
-still links too, just with the URL itself as the visible text. Quarterly
-Property Reports, Deal Pipeline, Loan Database, Utility Usage Tracker,
-CAM, Taxes, & Insurance, Property Basis Record, Hoy Billing Tool, Harbor
-Freight Billing Tool, and 211/213 N Lewis Billing Tool all have theirs
-filled in this way. Click the "Sources" button to open the popover — it's
-click-to-toggle, not hover, so it stays open while you scroll to a link
-and click it. The pencil that edits the list lives inside the popover
-itself (next to the "Sources" label at the top), not out in the table —
+Sources and Instructions each support up to 3,000 characters and can hold
+several lines with multiple links — the Sources/Instructions popovers on
+the Tracker turn any `http(s)://` URL in the text into a clickable link
+(`linkifyText()` in `public/tracker.html`, shared by both), so a note
+doesn't have to stay short to include real links to the GIS sites, Yardi
+Breeze, Google Drive/Sheets, etc. that a dashboard's update actually draws
+from. Write `[a short label](https://...)` and the label becomes the
+link's visible text instead of the raw URL — handy for the long,
+parameter-heavy GIS links in particular; a bare `https://...` still links
+too, just with the URL itself as the visible text. Quarterly Property
+Reports, Deal Pipeline, Loan Database, Utility Usage Tracker, CAM, Taxes,
+& Insurance, Property Basis Record, Hoy Billing Tool, Harbor Freight
+Billing Tool, and 211/213 N Lewis Billing Tool all have Sources filled in
+this way. Click a "Sources"/"Instructions" button to open its popover —
+it's click-to-toggle, not hover, so it stays open while you scroll to a
+link and click it. The pencil that edits the list lives inside the
+popover itself (next to the label at the top), not out in the table —
 it's an action on the list you just opened.
+
+Instructions is the same idea as Sources, but answers "how do I actually
+make this update, and who's allowed to?" instead of "where does the data
+come from?" Every dashboard has one: the ones anyone can update point at
+whichever feature on that dashboard does it (e.g. "Import a bill & reading
+with AI," "Add Period with Claude," "Add Property"); the ones only Sarah
+can update either say so and point at the "Yardi Pull Prompt" feature
+(Quarterly Property Reports, Utility Usage Tracker, CAM, Taxes, &
+Insurance — Claude's response to that prompt gets pasted into the Claude
+Code session connected to the dashboard to commit the update) or just note
+that updates go through Claude Code commands as needed (How to Create a
+Claude Dashboard, Loan Database, Triangle Property Portfolio). See the
+`*_INSTRUCTIONS` constants in `src/db.js`.
 
 Dashboards added through the Hub (rather than shipped in `SEED_DASHBOARDS`)
 have no `seed_key`, so a migration seeding one of these has to match on
-something else stable — name, for the checklists/sources above and for the
-"As needed" dashboards not already in `SEED_DASHBOARDS`. Guessing that
-name from context has gone wrong more than once (a dashboard turned out
-to be called "CAM, Taxes, & Insurance," not "CAM Insurance Taxes
-Tracker") — those migrations match on a short list of names (`WHERE name
-IN (...)`) rather than a single guess, so a wrong early guess left in the
-list costs nothing (it just never matches anything) and a future rename
-doesn't need to break the one that already worked.
+something else stable — name, for the checklists/sources/instructions
+above and for the "As needed" dashboards not already in `SEED_DASHBOARDS`.
+Guessing that name from context has gone wrong more than once (a dashboard
+turned out to be called "CAM, Taxes, & Insurance," not "CAM Insurance
+Taxes Tracker") — those migrations match on a short list of names (`WHERE
+name IN (...)`) rather than a single guess, so a wrong early guess left in
+the list costs nothing (it just never matches anything) and a future
+rename doesn't need to break the one that already worked. Separately, a
+report that Hoy Billing Tool's Sources weren't showing up despite having a
+`seed_key` in `SEED_DASHBOARDS` turned out to mean its production row's
+`seed_key` had never actually been set — so `ensureSchema()` now backfills
+`seed_key` by name for every `SEED_DASHBOARDS` entry (one row at a time,
+via a `LIMIT 1` subquery, so it can never violate the column's UNIQUE
+constraint even where a genuine duplicate exists) before any seed_key-keyed
+migration runs, closing off this whole class of bug rather than just the
+one dashboard that happened to get reported.
 
 ## Local development
 

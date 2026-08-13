@@ -82,19 +82,23 @@
   .cell-edit-actions button.primary:hover{background:var(--green-dark)}
   .cell-saving{opacity:.55;pointer-events:none}
   .cell-error{color:var(--red);font-size:11.5px;font-weight:600;margin-top:6px;white-space:normal}
-  .add-sources-btn{
+  /* Shared by the Sources and Instructions columns' "+ Add" button. */
+  .add-info-btn{
     font-family:inherit;font-size:12px;font-weight:600;color:var(--green-dark);
     background:transparent;border:1.5px dashed #b9d9bb;border-radius:20px;
     padding:4px 11px;cursor:pointer;
   }
-  .add-sources-btn:hover{border-color:var(--green);background:rgba(51,166,63,.08)}
-  .sources-btn{
+  .add-info-btn:hover{border-color:var(--green);background:rgba(51,166,63,.08)}
+  /* Shared by the Sources and Instructions columns' popover-trigger
+     button, once that column has something to show. */
+  .sources-btn, .instructions-btn{
     font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);
     background:#fff;border:1.5px solid var(--line);border-radius:20px;
     padding:5px 12px;cursor:pointer;white-space:nowrap;
   }
-  .sources-btn:hover, .sources-btn[aria-expanded="true"]{border-color:var(--green);color:var(--green-dark)}
-  td.col-sources{white-space:normal}
+  .sources-btn:hover, .sources-btn[aria-expanded="true"],
+  .instructions-btn:hover, .instructions-btn[aria-expanded="true"]{border-color:var(--green);color:var(--green-dark)}
+  td.col-sources, td.col-instructions{white-space:normal}
 
   /* ---------- UPDATE CHECKLIST ---------- */
   td.col-due{white-space:normal;min-width:200px}
@@ -165,8 +169,9 @@
       <p class="section-hint">
         Every dashboard on the Hub, in one table: when it was last updated, when it's next
         due, who's the one person that can edit it in Claude Code, and — click
-        <strong>Sources</strong> — the sources needed to update it. Click any Owner, Last updated,
-        Next update due, or Sources value to edit it right here — no form to open. Under
+        <strong>Sources</strong> or <strong>Instructions</strong> — where its data comes from
+        and how to actually make an update. Click any Owner, Last updated, Next update due,
+        Sources, or Instructions value to edit it right here — no form to open. Under
         "Next update due," open the checklist to see (or add) the specific reports/tasks due
         and check one off as you finish it — that automatically updates "Last updated" too.
         Adding a dashboard here (or on the Hub) adds it to both; any edit made here updates the
@@ -249,8 +254,12 @@
           <input type="text" id="fieldOwner" maxlength="80" />
         </div>
         <div class="field">
-          <label for="fieldSources">Sources to update it <span class="hint">(optional — shown as a hover tip on the Tracker)</span></label>
+          <label for="fieldSources">Sources to update it <span class="hint">(optional — shown in a pop-up on the Tracker)</span></label>
           <textarea id="fieldSources" maxlength="3000" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase"></textarea>
+        </div>
+        <div class="field">
+          <label for="fieldInstructions">Instructions to update it <span class="hint">(optional — shown in a pop-up on the Tracker)</span></label>
+          <textarea id="fieldInstructions" maxlength="3000" placeholder="e.g. Use the &quot;Add Property&quot; feature on the dashboard"></textarea>
         </div>
 
         <div class="modal-actions" id="modalActionsRow">
@@ -481,7 +490,7 @@
   //     and friends in src/db.js for examples).
   //   - a bare "http(s)://..." on its own — linked with the URL itself as
   //     the visible text, same as before this existed.
-  function linkifySources(text){
+  function linkifyText(text){
     return esc(text).replace(
       /\[([^\]]+)\]\((https?:\/\/[^\s()]+)\)|(https?:\/\/[^\s<>"]+)/g,
       (match, label, labeledUrl, bareUrl) => bareUrl
@@ -491,50 +500,75 @@
   }
 
   // One row per line rather than one pre-wrapped blob — a dot + a divider
-  // between entries reads much more like a list of distinct sources and
+  // between entries reads much more like a list of distinct items and
   // much less like a wall of text, especially once a couple of lines wrap.
-  // The pencil that edits the list lives in the popover's own header (see
-  // .sources-popover-header in shared.css) rather than next to the trigger
-  // button out in the table — it's an action on the list you just opened,
-  // not a second thing to press before you've even seen what's in it.
-  function sourcesPopoverHtml(text, site){
-    const rows = text.split("\n").map(line => line.trim()).filter(Boolean)
-      .map(line => `<div class="source-line"><span class="dot"></span><span class="text">${linkifySources(line)}</span></div>`)
+  // Shared by the Sources and Instructions popovers below.
+  function popoverLinesHtml(text){
+    return text.split("\n").map(line => line.trim()).filter(Boolean)
+      .map(line => `<div class="popover-line"><span class="dot"></span><span class="text">${linkifyText(line)}</span></div>`)
       .join("");
+  }
+
+  // The pencil that edits a Sources/Instructions list lives in the
+  // popover's own header (see .tracker-popover-header in shared.css)
+  // rather than next to the trigger button out in the table — it's an
+  // action on the list you just opened, not a second thing to press
+  // before you've even seen what's in it.
+  function sourcesPopoverHtml(text, site){
     return `
-      <div class="sources-popover-header">
-        <span class="sources-popover-label">Sources</span>
-        <button type="button" class="sources-popover-edit-btn" data-edit-sources-id="${site.id}" title="Edit sources" aria-label="Edit sources for ${esc(site.name)}">✎</button>
+      <div class="tracker-popover-header">
+        <span class="tracker-popover-label">Sources</span>
+        <button type="button" class="tracker-popover-edit-btn" title="Edit sources" aria-label="Edit sources for ${esc(site.name)}">✎</button>
       </div>
-      ${rows}`;
+      ${popoverLinesHtml(text)}`;
   }
 
   function sourcesDisplayHtml(s){
     if (s.sources) {
       return `<button type="button" class="sources-btn" data-sources-trigger="${s.id}" aria-haspopup="true" aria-expanded="false" aria-label="Sources needed to update ${esc(s.name)}">Sources</button>`;
     }
-    return `<button type="button" class="add-sources-btn" data-edit-sources-id="${s.id}">+ Add</button>`;
+    return `<button type="button" class="add-info-btn" data-edit-sources-id="${s.id}">+ Add</button>`;
+  }
+
+  // Same idea as Sources, but describing how to actually perform an
+  // update on this dashboard (which feature to use, and who's allowed to)
+  // rather than where the underlying data comes from.
+  function instructionsPopoverHtml(text, site){
+    return `
+      <div class="tracker-popover-header">
+        <span class="tracker-popover-label">Instructions</span>
+        <button type="button" class="tracker-popover-edit-btn" title="Edit instructions" aria-label="Edit instructions for ${esc(site.name)}">✎</button>
+      </div>
+      ${popoverLinesHtml(text)}`;
+  }
+
+  function instructionsDisplayHtml(s){
+    if (s.instructions) {
+      return `<button type="button" class="instructions-btn" data-instructions-trigger="${s.id}" aria-haspopup="true" aria-expanded="false" aria-label="Instructions for updating ${esc(s.name)}">Instructions</button>`;
+    }
+    return `<button type="button" class="add-info-btn" data-edit-instructions-id="${s.id}">+ Add</button>`;
   }
 
   /* =========================================================================
-     SOURCES POPOVER
+     SOURCES / INSTRUCTIONS POPOVER
      -------------------------------------------------------------------------
-     Click the "Sources" button to open it, click it again (or anywhere
-     else, or press Escape) to close it — not a hover tooltip. Appended to
-     <body> and positioned with getBoundingClientRect() rather than living
-     next to the button in the table and floating there via CSS — a plain
-     CSS bubble inside the table gets clipped by the table's own horizontal
-     scroll container, and centering it on the button runs it off the
-     right edge of the screen for a column this close to the edge. Only
-     one popover is ever open at a time.
+     Click a "Sources" or "Instructions" button to open its popover, click
+     it again (or anywhere else, or press Escape) to close it — not a hover
+     tooltip. Appended to <body> and positioned with getBoundingClientRect()
+     rather than living next to the button in the table and floating there
+     via CSS — a plain CSS bubble inside the table gets clipped by the
+     table's own horizontal scroll container, and centering it on the
+     button runs it off the right edge of the screen for a column this
+     close to the edge. Only one popover — of either kind — is ever open at
+     a time, so both columns share this one piece of state and machinery.
      ========================================================================= */
-  let openSourcesPopover = null; // { trigger, panel }
+  let openPopover = null; // { trigger, panel }
 
-  function closeSourcesPopover(){
-    if (openSourcesPopover) {
-      openSourcesPopover.trigger.setAttribute("aria-expanded", "false");
-      openSourcesPopover.panel.remove();
-      openSourcesPopover = null;
+  function closePopover(){
+    if (openPopover) {
+      openPopover.trigger.setAttribute("aria-expanded", "false");
+      openPopover.panel.remove();
+      openPopover = null;
     }
   }
 
@@ -543,7 +577,7 @@
   // no room, in which case it flips below. The little pointer arrow (::
   // before, in shared.css) tracks the trigger's actual center via a CSS
   // variable even after the panel itself got clamped away from it.
-  function positionSourcesPopover(trigger, panel){
+  function positionPopover(trigger, panel){
     const margin = 12;
     const triggerRect = trigger.getBoundingClientRect();
     const panelRect = panel.getBoundingClientRect();
@@ -567,46 +601,46 @@
   }
 
   // Clicking an already-open trigger's own button is a close, not a
-  // re-open — closeSourcesPopover() runs first either way so there's never
-  // more than one popover on screen. `site` is only needed to wire up the
-  // pencil in the popover's own header (clicking it closes the popover and
-  // opens the same in-table edit the old cell-level pencil used to).
-  function toggleSourcesPopover(trigger, html, site){
-    const wasOpenForThisTrigger = openSourcesPopover && openSourcesPopover.trigger === trigger;
-    closeSourcesPopover();
+  // re-open — closePopover() runs first either way so there's never more
+  // than one popover on screen. `onEdit`, if given, wires up the pencil in
+  // the popover's own header to close the popover and open whichever
+  // in-table edit the caller's field uses.
+  function togglePopover(trigger, html, onEdit){
+    const wasOpenForThisTrigger = openPopover && openPopover.trigger === trigger;
+    closePopover();
     if (wasOpenForThisTrigger) return;
 
     const panel = document.createElement("div");
-    panel.className = "sources-popover";
+    panel.className = "tracker-popover";
     panel.innerHTML = html;
     document.body.appendChild(panel);
-    positionSourcesPopover(trigger, panel);
+    positionPopover(trigger, panel);
     requestAnimationFrame(() => panel.classList.add("visible"));
 
     trigger.setAttribute("aria-expanded", "true");
-    openSourcesPopover = { trigger, panel };
+    openPopover = { trigger, panel };
 
-    const editBtn = panel.querySelector("[data-edit-sources-id]");
-    if (editBtn) {
+    const editBtn = panel.querySelector(".tracker-popover-edit-btn");
+    if (editBtn && onEdit) {
       editBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        closeSourcesPopover();
-        const cell = trigger.closest("td.col-sources");
-        if (cell) beginSourcesEdit(cell, site);
+        closePopover();
+        onEdit();
       });
     }
   }
 
-  // Wires the "Sources" trigger button in a given cell to open its
-  // popover — split out from wireSourcesPopovers() so beginSourcesEdit()'s
-  // cancel path can re-wire just the one cell it touched instead of
-  // re-scanning (and double-binding) the whole table.
+  // Wires the "Sources"/"Instructions" trigger button in a given cell to
+  // open its popover — split out from wireSourcesPopovers()/
+  // wireInstructionsPopovers() so beginSourcesEdit()'s/
+  // beginInstructionsEdit()'s cancel path can re-wire just the one cell it
+  // touched instead of re-scanning (and double-binding) the whole table.
   function wireSourcesTrigger(cell, site){
     const trigger = cell.querySelector("[data-sources-trigger]");
     if (!trigger) return;
     trigger.addEventListener("click", (e) => {
       e.stopPropagation(); // don't let the document click-outside handler below immediately close what this just opened
-      toggleSourcesPopover(trigger, sourcesPopoverHtml(site.sources, site), site);
+      togglePopover(trigger, sourcesPopoverHtml(site.sources, site), () => beginSourcesEdit(cell, site));
     });
   }
 
@@ -619,23 +653,41 @@
     });
   }
 
+  function wireInstructionsTrigger(cell, site){
+    const trigger = cell.querySelector("[data-instructions-trigger]");
+    if (!trigger) return;
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePopover(trigger, instructionsPopoverHtml(site.instructions, site), () => beginInstructionsEdit(cell, site));
+    });
+  }
+
+  function wireInstructionsPopovers(sites){
+    tableHost.querySelectorAll("td.col-instructions").forEach(cell => {
+      const trigger = cell.querySelector("[data-instructions-trigger]");
+      if (!trigger) return;
+      const site = sites.find(s => String(s.id) === trigger.getAttribute("data-instructions-trigger"));
+      if (site) wireInstructionsTrigger(cell, site);
+    });
+  }
+
   // A popover left open while the page scrolls or the window resizes would
   // be pointing at a stale position; closing it is simpler and safer than
   // trying to re-track the trigger. `true` (capture) so this still fires
   // for a scroll inside .table-wrap's own horizontal scrollbar, which
   // doesn't bubble to window the way a plain page scroll does.
-  window.addEventListener("scroll", closeSourcesPopover, true);
-  window.addEventListener("resize", closeSourcesPopover);
+  window.addEventListener("scroll", closePopover, true);
+  window.addEventListener("resize", closePopover);
 
   // Click anywhere else, or Escape, closes it — the standard "press
   // outside a popover to dismiss it" pattern.
   document.addEventListener("click", (e) => {
-    if (!openSourcesPopover) return;
-    if (openSourcesPopover.panel.contains(e.target)) return;
-    closeSourcesPopover();
+    if (!openPopover) return;
+    if (openPopover.panel.contains(e.target)) return;
+    closePopover();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && openSourcesPopover) closeSourcesPopover();
+    if (e.key === "Escape" && openPopover) closePopover();
   });
 
   // The three single-line fields editable right in the table. Each entry's
@@ -663,7 +715,7 @@
     // A full re-render replaces every row, so a popover left pointing at
     // an element that's about to be destroyed would end up orphaned,
     // floating over whatever's now in that spot instead of closing.
-    closeSourcesPopover();
+    closePopover();
     const rows = sites.map(s => {
       const mainRow = `
         <tr>
@@ -676,12 +728,13 @@
           <td class="editable" data-field="lastUpdated" data-id="${s.id}" tabindex="0">${lastUpdatedDisplayHtml(s)}<span class="editable-hint">✎</span></td>
           ${dueCellHtml(s)}
           <td class="col-sources">${sourcesDisplayHtml(s)}</td>
+          <td class="col-instructions">${instructionsDisplayHtml(s)}</td>
           <td class="col-actions">
             <button type="button" class="icon-btn" data-edit-id="${s.id}" title="Edit all fields" aria-label="Edit all fields for ${esc(s.name)}">✎</button>
           </td>
         </tr>`;
       const panelRow = expandedChecklists.has(String(s.id))
-        ? `<tr class="checklist-row"><td colspan="6">${renderChecklistPanel(s)}</td></tr>`
+        ? `<tr class="checklist-row"><td colspan="7">${renderChecklistPanel(s)}</td></tr>`
         : "";
       return mainRow + panelRow;
     }).join("");
@@ -696,6 +749,7 @@
               <th>Last updated</th>
               <th>Next update due</th>
               <th>Sources</th>
+              <th>Instructions</th>
               <th></th>
             </tr>
           </thead>
@@ -735,8 +789,16 @@
       });
     });
 
+    tableHost.querySelectorAll("[data-edit-instructions-id]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const site = sites.find(s => String(s.id) === btn.getAttribute("data-edit-instructions-id"));
+        if (site) beginInstructionsEdit(btn.closest("td.col-instructions"), site);
+      });
+    });
+
     wireChecklistControls();
     wireSourcesPopovers(sites);
+    wireInstructionsPopovers(sites);
   }
 
   // Merges a fresh dashboard record from the API into both the object a
@@ -762,7 +824,7 @@
       name: site.name, url: site.url, desc: site.desc, note: site.note,
       sitePassword: site.sitePassword, walkthrough: site.walkthrough,
       lastUpdated: site.lastUpdated, nextUpdateDue: site.nextUpdateDue,
-      owner: site.owner, sources: site.sources,
+      owner: site.owner, sources: site.sources, instructions: site.instructions,
     };
     record[field] = value;
     const updated = await apiRequest(`${API_BASE}/${site.id}`, {
@@ -817,11 +879,18 @@
     input.addEventListener("blur", () => finish(true));
   }
 
-  function beginSourcesEdit(cell, site){
-    const currentValue = site.sources || "";
+  // Shared by beginSourcesEdit()/beginInstructionsEdit() — the "click to
+  // edit a long free-text field in place" flow used by both the Sources
+  // and Instructions columns. `field`/`selectorAttr`/`cellClass` are the
+  // three names that differ between them; `displayFn`/`wireTrigger` are
+  // that field's own display-HTML and popover-wiring functions, so
+  // cancelling (or an unchanged save) can put the cell back exactly as
+  // renderTable() would have and leave its trigger button working.
+  function beginLongTextEdit(cell, site, { field, selectorAttr, cellClass, placeholder, displayFn, wireTrigger }){
+    const currentValue = site[field] || "";
     cell.classList.add("editing");
     cell.innerHTML = `
-      <textarea class="cell-input" maxlength="3000" aria-label="Edit sources for ${esc(site.name)}" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase">${esc(currentValue)}</textarea>
+      <textarea class="cell-input" maxlength="3000" aria-label="Edit ${field} for ${esc(site.name)}" placeholder="${esc(placeholder)}">${esc(currentValue)}</textarea>
       <div class="cell-edit-actions">
         <button type="button" class="cell-cancel">Cancel</button>
         <button type="button" class="cell-save primary">Save</button>
@@ -833,29 +902,29 @@
     const finish = (newHtml) => {
       cell.classList.remove("editing", "cell-saving");
       cell.innerHTML = newHtml;
-      // Sources still empty → the cell shows "+ Add" again, wire that up.
-      // Sources non-empty → the cell shows the "Sources" trigger button
-      // instead, whose click opens the popover (the pencil to re-edit now
-      // lives inside that popover, not the cell — see wireSourcesTrigger()).
-      tableHost.querySelectorAll(`[data-edit-sources-id="${site.id}"]`).forEach(btn => {
-        btn.addEventListener("click", () => beginSourcesEdit(btn.closest("td.col-sources"), site));
+      // Field still empty → the cell shows "+ Add" again, wire that up.
+      // Field non-empty → the cell shows the trigger button instead,
+      // whose click opens the popover (the pencil to re-edit now lives
+      // inside that popover, not the cell — see wireTrigger()).
+      tableHost.querySelectorAll(`[data-edit-${selectorAttr}-id="${site.id}"]`).forEach(btn => {
+        btn.addEventListener("click", () => beginLongTextEdit(btn.closest(`td.col-${cellClass}`), site, { field, selectorAttr, cellClass, placeholder, displayFn, wireTrigger }));
       });
-      wireSourcesTrigger(cell, site);
+      wireTrigger(cell, site);
     };
 
-    cell.querySelector(".cell-cancel").addEventListener("click", () => finish(sourcesDisplayHtml(site)));
+    cell.querySelector(".cell-cancel").addEventListener("click", () => finish(displayFn(site)));
     textarea.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") { e.preventDefault(); finish(sourcesDisplayHtml(site)); }
+      if (e.key === "Escape") { e.preventDefault(); finish(displayFn(site)); }
     });
     cell.querySelector(".cell-save").addEventListener("click", async () => {
       const value = textarea.value.trim();
-      if (value === currentValue) return finish(sourcesDisplayHtml(site));
+      if (value === currentValue) return finish(displayFn(site));
       textarea.disabled = true;
       cell.classList.add("cell-saving");
       try {
-        await saveField(site, "sources", value);
+        await saveField(site, field, value);
         // Full re-render, not just this cell: the Search box matches
-        // against sources text too, so a save can change the filtered set.
+        // against this text too, so a save can change the filtered set.
         applyFiltersAndRender();
       } catch (err) {
         cell.classList.remove("cell-saving");
@@ -864,6 +933,28 @@
         if (existingError) existingError.remove();
         cell.querySelector(".cell-edit-actions").insertAdjacentHTML("beforebegin", `<div class="cell-error">Couldn't save: ${esc(err.message)}</div>`);
       }
+    });
+  }
+
+  function beginSourcesEdit(cell, site){
+    beginLongTextEdit(cell, site, {
+      field: "sources",
+      selectorAttr: "sources",
+      cellClass: "sources",
+      placeholder: "e.g. Rent roll export from AppFolio, bank statements from Chase",
+      displayFn: sourcesDisplayHtml,
+      wireTrigger: wireSourcesTrigger,
+    });
+  }
+
+  function beginInstructionsEdit(cell, site){
+    beginLongTextEdit(cell, site, {
+      field: "instructions",
+      selectorAttr: "instructions",
+      cellClass: "instructions",
+      placeholder: "e.g. Use the \"Add Property\" feature on the dashboard",
+      displayFn: instructionsDisplayHtml,
+      wireTrigger: wireInstructionsTrigger,
     });
   }
 

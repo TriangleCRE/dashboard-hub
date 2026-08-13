@@ -198,18 +198,19 @@ a.btn-remove:hover{text-decoration:underline}
 #deleteConfirmYes{background:#b23b3b;color:#fff}
 #deleteConfirmYes:hover{background:#96302f}
 
-/* ---------- SOURCES BUTTON + POPOVER (Tracker "Sources" column) ---------- */
-/* Click (not hover) opens/closes the popover — see .sources-btn in
-   tracker.html's own <style> for the trigger button itself. The popover is
-   appended to <body> and positioned in JS (wireSourcesPopovers() /
-   toggleSourcesPopover() in public/tracker.html) rather than living next
-   to the button in the DOM and floating there via CSS — a plain CSS bubble
-   inside the table gets clipped by the table's own horizontal scroll
-   container, and centering it on the button runs it off the right edge of
-   the screen for a column this close to the edge. Positioning in JS
-   (position:fixed, clamped to the viewport, flips below when there's no
-   room above) fixes both. */
-.sources-popover{
+/* ---------- SOURCES / INSTRUCTIONS POPOVER (Tracker columns) ---------- */
+/* Shared by both the Sources and Instructions columns' popovers — same
+   look, same behavior, just different content. Click (not hover) opens/
+   closes it — see .sources-btn/.instructions-btn in tracker.html's own
+   <style> for the trigger buttons themselves. The popover is appended to
+   <body> and positioned in JS (togglePopover() in public/tracker.html)
+   rather than living next to the button in the DOM and floating there via
+   CSS — a plain CSS bubble inside the table gets clipped by the table's
+   own horizontal scroll container, and centering it on the button runs it
+   off the right edge of the screen for a column this close to the edge.
+   Positioning in JS (position:fixed, clamped to the viewport, flips below
+   when there's no room above) fixes both. */
+.tracker-popover{
   position:fixed;z-index:60;background:var(--ink);color:#fff;
   min-width:240px;max-width:460px;max-height:min(60vh,420px);overflow-y:auto;
   padding:10px 14px;border-radius:12px;font-size:12.5px;line-height:1.5;
@@ -217,41 +218,41 @@ a.btn-remove:hover{text-decoration:underline}
   opacity:0;transform:translateY(4px);pointer-events:none;
   transition:opacity .12s ease, transform .12s ease;
 }
-.sources-popover.visible{opacity:1;transform:translateY(0);pointer-events:auto}
-.sources-popover::before{
+.tracker-popover.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+.tracker-popover::before{
   content:"";position:absolute;left:var(--sp-arrow-left, 20px);
   border:6px solid transparent;
 }
-.sources-popover:not(.below)::before{top:100%;border-top-color:var(--ink)}
-.sources-popover.below::before{bottom:100%;border-bottom-color:var(--ink)}
-.sources-popover a{color:#9cc9ff;text-decoration:underline;word-break:break-word}
-.sources-popover a:hover{color:#c3e0ff}
-.source-line{
+.tracker-popover:not(.below)::before{top:100%;border-top-color:var(--ink)}
+.tracker-popover.below::before{bottom:100%;border-bottom-color:var(--ink)}
+.tracker-popover a{color:#9cc9ff;text-decoration:underline;word-break:break-word}
+.tracker-popover a:hover{color:#c3e0ff}
+.popover-line{
   display:flex;gap:9px;align-items:flex-start;padding:7px 0;
 }
-.source-line + .source-line{border-top:1px solid rgba(255,255,255,.10)}
-.source-line .dot{
+.popover-line + .popover-line{border-top:1px solid rgba(255,255,255,.10)}
+.popover-line .dot{
   flex:none;width:5px;height:5px;border-radius:50%;
   background:rgba(255,255,255,.4);margin-top:7px;
 }
-.source-line .text{flex:1 1 auto;min-width:0;white-space:pre-wrap}
+.popover-line .text{flex:1 1 auto;min-width:0;white-space:pre-wrap}
 
-/* The pencil that edits the Sources list lives here, in the popover's own
-   header, rather than out in the table next to the trigger button — it's
-   an action on the list you just opened, so it belongs where the list is. */
-.sources-popover-header{
+/* The pencil that edits the list lives here, in the popover's own header,
+   rather than out in the table next to the trigger button — it's an
+   action on the list you just opened, so it belongs where the list is. */
+.tracker-popover-header{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding-bottom:7px;margin-bottom:3px;border-bottom:1px solid rgba(255,255,255,.14);
 }
-.sources-popover-label{
+.tracker-popover-label{
   font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
   color:rgba(255,255,255,.7);
 }
-.sources-popover-edit-btn{
+.tracker-popover-edit-btn{
   flex:none;display:flex;align-items:center;justify-content:center;
   width:24px;height:24px;border-radius:50%;font-family:inherit;font-size:12px;
   line-height:1;cursor:pointer;color:#fff;background:transparent;
   border:1.5px solid rgba(255,255,255,.35);
   transition:background .15s, border-color .15s;
 }
-.sources-popover-edit-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.6)}
+.tracker-popover-edit-btn:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.6)}
