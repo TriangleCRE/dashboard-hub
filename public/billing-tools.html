@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Triangle Investment Group — Billing Tools</title>
+<link rel="stylesheet" href="/shared.css" />
+</head>
+<body>
+
+  <!-- ===================== APP ===================== -->
+  <div id="app">
+    <div class="accent-bar"></div>
+    <header class="top">
+      <div class="top-inner">
+        <img id="topLogo" alt="Triangle Investment Group" />
+        <div class="titles">
+          <h1>Billing Tools</h1>
+          <p>Water and utility billing tools for individual properties</p>
+        </div>
+        <nav class="top-nav">
+          <a href="/" class="top-nav-link">Dashboards</a>
+          <a href="/tracker" class="top-nav-link">Tracker</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="section-row">
+        <div class="section-label">Billing Tools</div>
+        <a class="btn btn-ghost" href="/">← All dashboards</a>
+      </div>
+      <div class="grid" id="grid"></div>
+    </main>
+
+  </div>
+
+  <!-- ===================== ADD / EDIT DASHBOARD MODAL ===================== -->
+  <!-- Shared verbatim with index.html/tracker.html (same ids) — see
+       public/shared.js. This page never opens the Add flow (no "+ Add
+       Dashboard" button here — a dashboard added from this page wouldn't
+       actually show up here unless its name also happened to match
+       BILLING_TOOL_NAMES in shared.js), only Edit via each card's pencil. -->
+  <div class="modal-overlay" id="addModalOverlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+      <h2 id="addModalTitle">Add Dashboard</h2>
+      <p class="sub" id="addModalSub">Add a link to another Triangle Investment Group dashboard.</p>
+      <p class="form-error" id="addModalError"></p>
+      <form id="addDashboardForm">
+        <div class="field">
+          <label for="fieldName">Name</label>
+          <input type="text" id="fieldName" maxlength="80" required />
+        </div>
+        <div class="field">
+          <label for="fieldUrl">URL</label>
+          <input type="text" id="fieldUrl" placeholder="https://" maxlength="500" required />
+        </div>
+
+        <div class="modal-section-label">Shown on the Hub</div>
+        <div class="field">
+          <label for="fieldDesc">Description <span class="hint">(optional)</span></label>
+          <textarea id="fieldDesc" maxlength="200"></textarea>
+        </div>
+        <div class="field">
+          <label for="fieldSitePassword">Site password <span class="hint">(optional)</span></label>
+          <input type="text" id="fieldSitePassword" maxlength="80" />
+        </div>
+        <div class="field">
+          <label for="fieldNote">Note <span class="hint">(optional)</span></label>
+          <input type="text" id="fieldNote" maxlength="80" />
+        </div>
+        <div class="field">
+          <label for="fieldWalkthrough">Walkthrough link <span class="hint">(optional)</span></label>
+          <input type="text" id="fieldWalkthrough" placeholder="https://" maxlength="500" />
+        </div>
+
+        <div class="modal-section-label">Tracked on the Tracker</div>
+        <div class="field">
+          <label for="fieldLastUpdated">Last updated <span class="hint">(optional — any format, e.g. "Aug 5, 2026")</span></label>
+          <input type="text" id="fieldLastUpdated" maxlength="40" />
+        </div>
+        <div class="field">
+          <label for="fieldNextUpdateDue">Next update due <span class="hint">(optional — any format, e.g. "Sep 1, 2026", or "As needed")</span></label>
+          <input type="text" id="fieldNextUpdateDue" maxlength="40" />
+        </div>
+        <div class="field">
+          <label for="fieldOwner">Owner <span class="hint">(the one person who edits this in Claude Code)</span></label>
+          <input type="text" id="fieldOwner" maxlength="80" />
+        </div>
+        <div class="field">
+          <label for="fieldSources">Sources to update it <span class="hint">(optional — shown in a pop-up on the Tracker)</span></label>
+          <textarea id="fieldSources" maxlength="3000" placeholder="e.g. Rent roll export from AppFolio, bank statements from Chase"></textarea>
+        </div>
+        <div class="field">
+          <label for="fieldInstructions">Instructions to update it <span class="hint">(optional — shown in a pop-up on the Tracker)</span></label>
+          <textarea id="fieldInstructions" maxlength="3000" placeholder="e.g. Use the &quot;Add Property&quot; feature on the dashboard"></textarea>
+        </div>
+
+        <div class="modal-actions" id="modalActionsRow">
+          <button type="button" class="btn-remove" id="deleteDashboard" hidden>Delete Dashboard</button>
+          <a class="btn btn-ghost" id="cancelAddDashboard" href="javascript:void(0)">Cancel</a>
+          <button type="submit" class="btn" id="submitAddDashboard">Add Dashboard</button>
+        </div>
+        <div class="delete-confirm" id="deleteConfirmRow" hidden>
+          <p class="delete-confirm-text">Delete this dashboard for everyone? This can't be undone.</p>
+          <div class="delete-confirm-actions">
+            <button type="button" id="deleteConfirmNo">Never mind</button>
+            <button type="button" id="deleteConfirmYes">Yes, delete it</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script src="/shared.js"></script>
+<script>
+  /* =========================================================================
+     BILLING TOOLS
+     -------------------------------------------------------------------------
+     The page the Hub's "Billing Tools" tile links to (see public/index.html)
+     — lists the same BILLING_TOOL_NAMES rows (public/shared.js) as full
+     cards, one per property, instead of folded into that one tile. Same
+     data source as every other page here: GET /api/dashboards, backed by
+     the shared `dashboards` table (src/db.js) — editing a card here writes
+     to the very same row the Hub and Tracker read on their next load.
+     ========================================================================= */
+  document.getElementById("topLogo").src = LOGO;
+
+  const grid = document.getElementById("grid");
+
+  function renderMessage(text){
+    grid.innerHTML = `<p class="grid-message">${esc(text)}</p>`;
+  }
+
+  let billingSites = [];
+
+  function renderCards(sites){
+    grid.innerHTML = sites.map(renderDashboardCard).join("");
+    grid.querySelectorAll("[data-edit-id]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const site = billingSites.find(s => String(s.id) === btn.getAttribute("data-edit-id"));
+        if (site) modal.openEditModal(site);
+      });
+    });
+  }
+
+  async function loadAndRender(){
+    renderMessage("Loading billing tools…");
+    try {
+      const sites = await apiRequest(API_BASE);
+      billingSites = sites.filter(s => BILLING_TOOL_NAMES.includes(s.name));
+      if (!billingSites.length) {
+        renderMessage("No billing tools found.");
+        return;
+      }
+      renderCards(billingSites);
+    } catch (err) {
+      grid.innerHTML = `<p class="grid-message">Couldn't load billing tools (${esc(err.message)}). <a href="javascript:void(0)" id="retryLoad">Retry</a></p>`;
+      const retry = document.getElementById("retryLoad");
+      if (retry) retry.addEventListener("click", loadAndRender);
+    }
+  }
+
+  const modal = initDashboardModal(loadAndRender);
+
+  loadAndRender();
+</script>
+</body>
+</html>

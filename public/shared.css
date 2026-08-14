@@ -101,12 +101,15 @@ button.btn{
   display:inline-block;font-size:11px;font-weight:600;color:var(--green-dark);
   background:rgba(51,166,63,.12);border-radius:20px;padding:3px 10px;
 }
-a.btn{
+/* Not `a.btn` — the Billing Tools tile (public/index.html) uses this same
+   look on a plain <span> for its "View billing tools →" affordance, since
+   the whole tile (not just that span) is the actual <a>. */
+.btn{
   display:inline-flex;align-items:center;gap:6px;text-decoration:none;
   font-size:14px;font-weight:600;color:#fff;background:var(--green);
   padding:10px 16px;border-radius:9px;transition:background .15s;
 }
-a.btn:hover{background:var(--green-dark)}
+.btn:hover{background:var(--green-dark)}
 a.btn-ghost{
   background:transparent;color:var(--ink);border:1.5px solid var(--line);
 }
@@ -121,6 +124,46 @@ footer .note{border-top:1px solid var(--line);padding-top:18px}
   color:var(--ink-soft);font-size:14px;padding:8px 2px;
 }
 .grid-message a{color:var(--green-dark);font-weight:600}
+
+/* ---------- CARD GRID (index.html and billing-tools.html) ---------- */
+/* Both pages lay out dashboards as cards in the same grid, built by the
+   same renderDashboardCard() (see shared.js) — index.html for the full
+   list, billing-tools.html for just the grouped billing tools. */
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;
+}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow);padding:22px 22px 20px;display:flex;flex-direction:column;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.card:hover{transform:translateY(-2px);box-shadow:0 2px 6px rgba(0,0,0,.08),0 14px 34px rgba(0,0,0,.10)}
+.card.pinned{
+  background:var(--orange-tint);border:1.5px solid var(--orange);
+  box-shadow:0 1px 3px rgba(232,134,58,.15), 0 8px 24px rgba(232,134,58,.12);
+}
+.pinned-badge{
+  display:inline-block;font-size:11px;font-weight:700;color:#fff;
+  background:var(--orange);border-radius:20px;padding:3px 10px;
+  letter-spacing:.2px;flex:none;
+}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+.card-head-actions{display:flex;align-items:center;gap:8px;flex:none}
+.card .name{font-size:16.5px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
+.card .name .dot{width:9px;height:9px;border-radius:50%;background:var(--green);flex:none}
+.card .desc{font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;flex:1}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-soft);margin-bottom:16px}
+.meta .k{font-weight:600;color:var(--ink)}
+.note-text{
+  font-size:12.5px;color:var(--ink-soft);font-style:italic;
+  line-height:1.4;margin-bottom:14px;
+}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* The Billing Tools tile on the Hub — a card that's really a link to
+   /billing-tools rather than to an external dashboard, so it needs its
+   anchor-ness (underline/visited color) reset back to plain card styling. */
+a.card.billing-tile{text-decoration:none;color:inherit;cursor:pointer}
 
 /* ---------- ADD / EDIT DASHBOARD ---------- */
 .icon-btn{

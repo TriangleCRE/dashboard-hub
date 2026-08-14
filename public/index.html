@@ -5,65 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Triangle Investment Group — Dashboard Hub</title>
 <link rel="stylesheet" href="/shared.css" />
-<style>
-  /* ---------- HUB-ONLY: card grid ---------- */
-  .grid{
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;
-  }
-  .card{
-    background:var(--card);border:1px solid var(--line);border-radius:14px;
-    box-shadow:var(--shadow);padding:22px 22px 20px;display:flex;flex-direction:column;
-    transition:transform .12s ease, box-shadow .12s ease;
-  }
-  .card:hover{transform:translateY(-2px);box-shadow:0 2px 6px rgba(0,0,0,.08),0 14px 34px rgba(0,0,0,.10)}
-  .card.pinned{
-    background:var(--orange-tint);border:1.5px solid var(--orange);
-    box-shadow:0 1px 3px rgba(232,134,58,.15), 0 8px 24px rgba(232,134,58,.12);
-  }
-  .pinned-badge{
-    display:inline-block;font-size:11px;font-weight:700;color:#fff;
-    background:var(--orange);border-radius:20px;padding:3px 10px;
-    letter-spacing:.2px;flex:none;
-  }
-  .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
-  .card-head-actions{display:flex;align-items:center;gap:8px;flex:none}
-  .card .name{font-size:16.5px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
-  .card .name .dot{width:9px;height:9px;border-radius:50%;background:var(--green);flex:none}
-  .card .desc{font-size:13.5px;color:var(--ink-soft);line-height:1.5;margin:0 0 16px;flex:1}
-  .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-soft);margin-bottom:16px}
-  .meta .k{font-weight:600;color:var(--ink)}
-  .note-text{
-    font-size:12.5px;color:var(--ink-soft);font-style:italic;
-    line-height:1.4;margin-bottom:14px;
-  }
-  .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-
-  /* ---------- HUB-ONLY: the grouped "Billing Tools" tile ----------
-     The per-property billing tools (Hoy, Harbor Freight, 211/213 N Lewis)
-     render as one collapsible tile instead of three separate cards — see
-     BILLING_TOOL_NAMES below. Collapsed by default; clicking the header
-     expands it to a per-property list, each with its own "Open dashboard"
-     link (and pencil, so editing a property's dashboard still works
-     exactly like any other card). */
-  .billing-tile-header{
-    background:none;border:none;padding:0;font:inherit;color:inherit;
-    text-align:left;width:100%;cursor:pointer;
-  }
-  .billing-tile-header:focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:8px}
-  .billing-chevron{
-    display:inline-block;color:var(--ink-soft);font-size:13px;flex:none;
-    transition:transform .15s ease;
-  }
-  .billing-tile.open .billing-chevron{transform:rotate(90deg)}
-  .billing-list{display:flex;flex-direction:column;margin-top:2px}
-  .billing-list[hidden]{display:none}
-  .billing-item{padding:12px 0;border-top:1px solid var(--line)}
-  .billing-item:first-child{border-top:none;padding-top:0}
-  .billing-item-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
-  .billing-item-name{font-size:14px;font-weight:700}
-  .billing-item-meta{font-size:12px;color:var(--ink-soft);margin-bottom:8px}
-  .billing-item-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-</style>
 </head>
 <body>
 
@@ -220,32 +161,13 @@
   const sortSelect = document.getElementById("sortSelect");
   const filterSelect = document.getElementById("filterSelect");
 
-  /* =========================================================================
-     BILLING TOOLS TILE
-     -------------------------------------------------------------------------
-     These three are still just regular rows in the `dashboards` table (see
-     src/db.js) — each with its own owner, checklist, sources, etc. on the
-     Tracker. This only changes how the Hub *displays* them: grouped into
-     one tile instead of three separate cards. Matched by name (there's no
-     "billing tool" flag in the data) — same name-matching pattern the
-     Tracker's own migrations already rely on for these exact three rows.
-     ========================================================================= */
-  const BILLING_TOOL_NAMES = [
-    "Hoy Billing Tool",
-    "Harbor Freight Billing Tool",
-    "211/213 N Lewis Billing Tool",
-  ];
-
-  // Collapsed by default — expanding is the "click to see each individual
-  // dashboard" step the tile exists for. Lives outside renderCards() so it
-  // survives the full re-render every search keystroke/sort/filter change
-  // triggers (rather than resetting closed on every one of those).
-  let billingTileOpen = false;
-
-  // A synthetic "site" standing in for the grouped rows above wherever the
-  // rest of this file expects one — sortSites() in particular needs `name`/
-  // `pinned`/lastUpdated-shaped input to place it correctly, same as any
-  // real dashboard.
+  // A synthetic "site" standing in for the grouped billing tools (see
+  // BILLING_TOOL_NAMES in shared.js) wherever the rest of this file expects
+  // one — sortSites() in particular needs `name`/`pinned`/lastUpdated-shaped
+  // input to place it correctly, same as any real dashboard. Its card is a
+  // link to billing-tools.html (see renderBillingTile below), not to an
+  // external dashboard — clicking it is how you get to each property's
+  // individual card.
   function buildBillingTile(children){
     const latest = children.reduce(
       (best, c) => (updatedTime(c) > updatedTime(best) ? c : best),
@@ -257,7 +179,7 @@
       name: "Billing Tools",
       pinned: false,
       lastUpdated: latest.lastUpdated,
-      children,
+      count: children.length,
     };
   }
 
@@ -335,99 +257,36 @@
   sortSelect.addEventListener("change", applyFiltersAndRender);
   filterSelect.addEventListener("change", applyFiltersAndRender);
 
-  function renderCard(s){
-    const meta = [];
-    if (s.lastUpdated) meta.push(`<span><span class="k">Last updated:</span> ${esc(s.lastUpdated)}</span>`);
-    const metaHtml = meta.length ? `<div class="meta">${meta.join("")}</div>` : "";
-    const pill = s.sitePassword
-      ? `<div style="margin-bottom:14px"><span class="pill">Site password: ${esc(s.sitePassword)}</span></div>` : "";
-    const noteText = s.note ? `<div class="note-text">${esc(s.note)}</div>` : "";
-    const walk = s.walkthrough
-      ? `<a class="btn btn-ghost" href="${esc(s.walkthrough)}" target="_blank" rel="noopener">▶ Walkthrough</a>` : "";
-    const pinnedBadge = s.pinned ? `<span class="pinned-badge">★ Start here</span>` : "";
-    return `
-      <div class="card${s.pinned ? " pinned" : ""}">
-        <div class="card-head">
-          <div class="name"><span class="dot"></span>${esc(s.name)}</div>
-          <div class="card-head-actions">
-            ${pinnedBadge}
-            <button type="button" class="icon-btn" data-edit-id="${s.id}" title="Edit" aria-label="Edit ${esc(s.name)}">✎</button>
-          </div>
-        </div>
-        <div class="desc">${esc(s.desc)}</div>
-        ${metaHtml}
-        ${pill}
-        ${noteText}
-        <div class="actions">
-          <a class="btn" href="${esc(s.url)}" target="_blank" rel="noopener">Open dashboard →</a>
-          ${walk}
-        </div>
-      </div>`;
-  }
-
-  // One property's row inside the expanded Billing Tools tile — same
-  // "Open dashboard"/walkthrough/site-password/edit affordances a regular
-  // card has, just laid out compactly since several sit inside one tile.
-  function renderBillingItem(s){
-    const metaHtml = s.lastUpdated
-      ? `<div class="billing-item-meta"><span class="k">Last updated:</span> ${esc(s.lastUpdated)}</div>` : "";
-    const pill = s.sitePassword
-      ? `<span class="pill">Site password: ${esc(s.sitePassword)}</span>` : "";
-    const walk = s.walkthrough
-      ? `<a class="btn btn-ghost" href="${esc(s.walkthrough)}" target="_blank" rel="noopener">▶ Walkthrough</a>` : "";
-    return `
-      <div class="billing-item">
-        <div class="billing-item-head">
-          <div class="billing-item-name">${esc(s.name)}</div>
-          <button type="button" class="icon-btn" data-edit-id="${s.id}" title="Edit" aria-label="Edit ${esc(s.name)}">✎</button>
-        </div>
-        ${metaHtml}
-        <div class="billing-item-actions">
-          <a class="btn" href="${esc(s.url)}" target="_blank" rel="noopener">Open dashboard →</a>
-          ${walk}
-          ${pill}
-        </div>
-      </div>`;
-  }
-
+  // A card that links to billing-tools.html instead of an external
+  // dashboard — clicking it is the "see each individual dashboard" step,
+  // not an in-place expand, so it's a plain <a class="card">, same shape
+  // as renderDashboardCard's real-dashboard cards (see shared.js) rather
+  // than a variant of one.
   function renderBillingTile(group){
-    const count = group.children.length;
     return `
-      <div class="card billing-tile${billingTileOpen ? " open" : ""}">
-        <button type="button" class="card-head billing-tile-header" data-billing-toggle aria-expanded="${billingTileOpen}">
+      <a class="card billing-tile" href="/billing-tools">
+        <div class="card-head">
           <div class="name"><span class="dot"></span>Billing Tools</div>
           <div class="card-head-actions">
-            <span class="pill">${count} propert${count === 1 ? "y" : "ies"}</span>
-            <span class="billing-chevron" aria-hidden="true">▸</span>
+            <span class="pill">${group.count} propert${group.count === 1 ? "y" : "ies"}</span>
           </div>
-        </button>
-        <div class="desc">Billing tools for individual properties. Click to open each one.</div>
-        <div class="billing-list" ${billingTileOpen ? "" : "hidden"}>
-          ${group.children.map(renderBillingItem).join("")}
         </div>
-      </div>`;
+        <div class="desc">Billing tools for individual properties. Click to open each one.</div>
+        <div class="actions">
+          <span class="btn">View billing tools →</span>
+        </div>
+      </a>`;
   }
 
   function renderCards(sites){
-    grid.innerHTML = sites.map(s => s.isBillingGroup ? renderBillingTile(s) : renderCard(s)).join("");
+    grid.innerHTML = sites.map(s => s.isBillingGroup ? renderBillingTile(s) : renderDashboardCard(s)).join("");
 
-    // Looks up against allSites (the untouched full list), not the `sites`
-    // passed in here — a billing tool's edit pencil lives inside the
-    // synthetic tile now, not as its own top-level entry in `sites`.
     grid.querySelectorAll("[data-edit-id]").forEach(btn => {
       btn.addEventListener("click", () => {
-        const site = allSites.find(s => String(s.id) === btn.getAttribute("data-edit-id"));
+        const site = sites.find(s => String(s.id) === btn.getAttribute("data-edit-id"));
         if (site) modal.openEditModal(site);
       });
     });
-
-    const billingToggle = grid.querySelector("[data-billing-toggle]");
-    if (billingToggle) {
-      billingToggle.addEventListener("click", () => {
-        billingTileOpen = !billingTileOpen;
-        applyFiltersAndRender();
-      });
-    }
   }
 
   async function loadAndRender(){

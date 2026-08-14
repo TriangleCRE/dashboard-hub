@@ -50,6 +50,59 @@ async function apiRequest(path, options) {
 const DEFAULT_OWNER = "Sarah Dahl";
 
 /* =========================================================================
+   BILLING TOOLS
+   -------------------------------------------------------------------------
+   These three are still just regular rows in the `dashboards` table (see
+   src/db.js) — each with its own owner, checklist, sources, etc. on the
+   Tracker. This only changes how they're *displayed*: index.html folds
+   them into one "Billing Tools" tile that links to billing-tools.html,
+   which lists them out as full cards. Matched by name (there's no
+   "billing tool" flag in the data) — same name-matching pattern the
+   Tracker's own migrations already rely on for these exact three rows.
+   Shared here (rather than living in index.html alone) since both pages
+   need the exact same list.
+   ========================================================================= */
+const BILLING_TOOL_NAMES = [
+  "Hoy Billing Tool",
+  "Harbor Freight Billing Tool",
+  "211/213 N Lewis Billing Tool",
+];
+
+// The card markup both index.html and billing-tools.html use for a single
+// dashboard — kept here so the two pages can't drift apart on what a card
+// looks like. `onEditClick(site)` is called when the card's pencil is
+// clicked; the caller wires that to modal.openEditModal.
+function renderDashboardCard(s){
+  const meta = [];
+  if (s.lastUpdated) meta.push(`<span><span class="k">Last updated:</span> ${esc(s.lastUpdated)}</span>`);
+  const metaHtml = meta.length ? `<div class="meta">${meta.join("")}</div>` : "";
+  const pill = s.sitePassword
+    ? `<div style="margin-bottom:14px"><span class="pill">Site password: ${esc(s.sitePassword)}</span></div>` : "";
+  const noteText = s.note ? `<div class="note-text">${esc(s.note)}</div>` : "";
+  const walk = s.walkthrough
+    ? `<a class="btn btn-ghost" href="${esc(s.walkthrough)}" target="_blank" rel="noopener">▶ Walkthrough</a>` : "";
+  const pinnedBadge = s.pinned ? `<span class="pinned-badge">★ Start here</span>` : "";
+  return `
+    <div class="card${s.pinned ? " pinned" : ""}">
+      <div class="card-head">
+        <div class="name"><span class="dot"></span>${esc(s.name)}</div>
+        <div class="card-head-actions">
+          ${pinnedBadge}
+          <button type="button" class="icon-btn" data-edit-id="${s.id}" title="Edit" aria-label="Edit ${esc(s.name)}">✎</button>
+        </div>
+      </div>
+      <div class="desc">${esc(s.desc)}</div>
+      ${metaHtml}
+      ${pill}
+      ${noteText}
+      <div class="actions">
+        <a class="btn" href="${esc(s.url)}" target="_blank" rel="noopener">Open dashboard →</a>
+        ${walk}
+      </div>
+    </div>`;
+}
+
+/* =========================================================================
    ADD / EDIT DASHBOARD MODAL
    -------------------------------------------------------------------------
    Both pages embed the exact same modal markup (same element ids). This
