@@ -585,6 +585,34 @@ async function migrateChecklistLabelPrefixes() {
   }
 }
 
+// Fix-up for the "checklist = '[]'::jsonb" guard on the Loan Database
+// checklist migration further down: by the time that migration shipped,
+// someone had already hand-added a "Jeryl reviews dashboard" item to
+// Loan Database's checklist through the Tracker, so the checklist wasn't
+// empty and that guard never matched — LOAN_DATABASE_CHECKLIST never
+// landed. This appends it onto whatever's already there instead of
+// requiring an empty checklist, leaving any hand-added item untouched.
+// Guarded on the "Add future checklist items" marker (the last item in
+// LOAN_DATABASE_CHECKLIST) being absent, so it can't duplicate on a later
+// cold start — including the case where the checklist really was empty
+// and the other migration seeded it first, since that marker would
+// already be there by the time this one runs.
+async function migrateLoanDatabaseChecklistAppend() {
+  const { rows } = await query(
+    `SELECT id, checklist FROM dashboards WHERE seed_key = 'loan-database'`
+  );
+  for (const row of rows) {
+    const checklist = row.checklist || [];
+    const alreadyAppended = checklist.some((item) => item.label === "Add future checklist items");
+    if (alreadyAppended) continue;
+    const updated = [...checklist, ...LOAN_DATABASE_CHECKLIST];
+    await query(
+      `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2, updated_at = now() WHERE id = $3`,
+      [JSON.stringify(updated), computeNextUpdateDue(updated), row.id]
+    );
+  }
+}
+
 let ensureSchemaPromise = null;
 
 // Creates the table (if missing) and seeds the original dashboards (if not
@@ -759,6 +787,9 @@ function ensureSchema() {
          WHERE seed_key = 'loan-database' AND checklist = '[]'::jsonb`,
         [JSON.stringify(LOAN_DATABASE_CHECKLIST), computeNextUpdateDue(LOAN_DATABASE_CHECKLIST)]
       );
+      // Catches the case above where that guard missed because the
+      // checklist wasn't actually empty (see migrateLoanDatabaseChecklistAppend).
+      await migrateLoanDatabaseChecklistAppend();
       // The monthly pull schedule for Utility Usage Tracker (see
       // UTILITY_TRACKER_CHECKLIST above). This dashboard was added through
       // the Hub, not seeded, so there's no seed_key to key off — match by
