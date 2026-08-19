@@ -242,6 +242,33 @@ const DEAL_PIPELINE_SOURCES = [
   "[Triangle Developments_Opportunities Lists](https://docs.google.com/spreadsheets/d/1T5NM7vDkwPZQSAF4auMaCFSprn1Pg-BbkbB6w9XoiLg/edit?usp=sharing)",
 ].join("\n");
 
+// One-time checklist seed for "Loan Database" (see the migration in
+// ensureSchema below). Two different things in one seed: a one-off ask
+// for Jeryl/Tiffany to try the database out and weigh in on adopting it
+// as the live source of truth going forward, and the monthly update
+// cadence itself — due the 15th of every month (pushed to the next
+// Monday on a weekend, same rule as the other monthly checklists above)
+// from Sep 2026 through Jul 2027. This dashboard's been "As needed"
+// since it was seeded; computeNextUpdateDue() promotes next_update_due
+// off that once real due dates land in the checklist, same as any other
+// dashboard. Last item is a reminder to add more once this list runs
+// out, since none of these checklists regenerate on their own.
+const LOAN_DATABASE_CHECKLIST = [
+  checklistItem("Jeryl/Tiffany check-in on database as source of truth", "2026-08-28"),
+  checklistItem("Sep 2026 database update", "2026-09-15"),
+  checklistItem("Oct 2026 database update", "2026-10-15"),
+  checklistItem("Nov 2026 database update", "2026-11-16"),
+  checklistItem("Dec 2026 database update", "2026-12-15"),
+  checklistItem("Jan 2027 database update", "2027-01-15"),
+  checklistItem("Feb 2027 database update", "2027-02-15"),
+  checklistItem("Mar 2027 database update", "2027-03-15"),
+  checklistItem("Apr 2027 database update", "2027-04-15"),
+  checklistItem("May 2027 database update", "2027-05-17"),
+  checklistItem("Jun 2027 database update", "2027-06-15"),
+  checklistItem("Jul 2027 database update", "2027-07-15"),
+  checklistItem("Add future checklist items", "2027-07-15"),
+];
+
 const LOAN_DATABASE_SOURCES = [
   "[Loan Analysis_251001.xls](https://docs.google.com/spreadsheets/d/1WHC0LCYZ-TEodNZFGSnLBIo5cZ_SnP38/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
   "[Loan Master Spreadsheet.xlsx](https://docs.google.com/spreadsheets/d/1IuK40UXjbiwfrJDwaGhBDrdM4uAztYzY/edit?usp=sharing&ouid=115725780764828123803&rtpof=true&sd=true)",
@@ -444,13 +471,14 @@ const SEED_DASHBOARDS = [
     description: "Loan database for Triangle Investment Group.",
     url: "https://triangle-loan-database.vercel.app/",
     lastUpdated: "Jul 7, 2026",
-    nextUpdateDue: "As needed",
+    nextUpdateDue: computeNextUpdateDue(LOAN_DATABASE_CHECKLIST),
     owner: DEFAULT_OWNER,
     note: "",
     sitePassword: "",
     sources: LOAN_DATABASE_SOURCES,
     instructions: LOAN_DATABASE_INSTRUCTIONS,
     walkthrough: "",
+    checklist: LOAN_DATABASE_CHECKLIST,
   },
   {
     seedKey: "triangle-lease-book",
@@ -723,6 +751,13 @@ function ensureSchema() {
       await query(
         `UPDATE dashboards SET sources = $1 WHERE seed_key = 'loan-database' AND sources = ''`,
         [LOAN_DATABASE_SOURCES]
+      );
+      // The monthly update cadence, plus the one-off Jeryl/Tiffany ask,
+      // for Loan Database (see LOAN_DATABASE_CHECKLIST above).
+      await query(
+        `UPDATE dashboards SET checklist = $1::jsonb, next_update_due = $2
+         WHERE seed_key = 'loan-database' AND checklist = '[]'::jsonb`,
+        [JSON.stringify(LOAN_DATABASE_CHECKLIST), computeNextUpdateDue(LOAN_DATABASE_CHECKLIST)]
       );
       // The monthly pull schedule for Utility Usage Tracker (see
       // UTILITY_TRACKER_CHECKLIST above). This dashboard was added through

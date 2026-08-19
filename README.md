@@ -120,10 +120,10 @@ keeps it as-is whenever nothing in the checklist has a real due date) —
 it only gets promoted to a real date once some item actually has one, the
 same as it would for any other dashboard.
 
-Deal Pipeline, Loan Database, Triangle Property Portfolio, Triangle Lease
-Book, and How to Create a Claude Dashboard are set to "As needed" — they
-get updated as new deals/loans/properties/leases show up or the guide
-needs a tweak, not on a schedule. The Tracker's "Show" filter has options
+Deal Pipeline, Triangle Property Portfolio, Triangle Lease Book, and How
+to Create a Claude Dashboard are set to "As needed" — they get updated as
+new deals/properties/leases show up or the guide needs a tweak, not on a
+schedule. The Tracker's "Show" filter has options
 for both ends of that —
 "As needed" and "Has a set update date" — alongside Overdue/Due soon. "As
 needed" also gets its own subtly different status-pill color
@@ -142,6 +142,15 @@ cadence since its source doc didn't give a fixed list of future dates;
 CAM, Taxes, & Insurance so far just has its one 2026 item. Add more from
 the Tracker as any of these run out, since none of them regenerate on
 their own.
+
+Loan Database moved off "As needed" once it got a real monthly cadence
+seeded in as a checklist — `LOAN_DATABASE_CHECKLIST` in `src/db.js`, due
+the 15th of every month (pushed to the next Monday on a weekend, same
+rule as above) from Sep 2026 through Jul 2027, plus an Aug 28, 2026 item
+for Jeryl/Tiffany to weigh in on adopting it as the live source of truth.
+The last item, due Jul 15, 2027, is a reminder to add the next batch —
+add more from the Tracker once this list runs out, since it doesn't
+regenerate on its own.
 
 Hoy Billing Tool, Harbor Freight Billing Tool, and 211/213 N Lewis Billing
 Tool also have their bill cycles seeded in as a checklist —
