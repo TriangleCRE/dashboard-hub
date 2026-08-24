@@ -281,6 +281,11 @@ const TRIANGLE_LEASE_BOOK_SOURCES = [
   "Also in this [Google Drive folder](https://drive.google.com/drive/folders/1PtLPxWVypvKgLZVuw4q0EYoaqKQtM0ix?usp=sharing)",
 ].join("\n");
 
+const DVILLE_LLC_SOURCES = [
+  "[Danville_Outreach_Contact_Tracker](https://docs.google.com/spreadsheets/d/1-LKCli2ddgWcZnnY43N83Yr6-Vrzuq7tGtoJ3sOLbgE/edit?usp=sharing)",
+  "[Danville_Storage_Opening_Campaign_Plan](https://drive.google.com/file/d/17kOLW4ZR70YRM68fIBCGqH7NxJSCzyCy/view?usp=sharing)",
+].join("\n");
+
 // Bimonthly billing cycle for Hoy Billing Tool and 211/213 N Lewis Billing
 // Tool — both on the exact same cadence (a bill covering a 2-month period
 // gets updated on the 1st of the month after that period ends). Neither
@@ -374,6 +379,7 @@ const HOW_TO_CREATE_DASHBOARD_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS
 const LOAN_DATABASE_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const PROPERTY_PORTFOLIO_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const TRIANGLE_LEASE_BOOK_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
+const DVILLE_LLC_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 
 const SEED_DASHBOARDS = [
   {
@@ -492,6 +498,20 @@ const SEED_DASHBOARDS = [
     sitePassword: "2903",
     sources: TRIANGLE_LEASE_BOOK_SOURCES,
     instructions: TRIANGLE_LEASE_BOOK_INSTRUCTIONS,
+    walkthrough: "",
+  },
+  {
+    seedKey: "dville-llc",
+    name: "Dville LLC",
+    description: "Marketing tracker for the Danville CubeSmart opening, October 6, 2026.",
+    url: "https://dville-llc.vercel.app/",
+    lastUpdated: "Aug 24, 2026",
+    nextUpdateDue: "As needed",
+    owner: DEFAULT_OWNER,
+    note: "",
+    sitePassword: "2903",
+    sources: DVILLE_LLC_SOURCES,
+    instructions: DVILLE_LLC_INSTRUCTIONS,
     walkthrough: "",
   },
 ];
