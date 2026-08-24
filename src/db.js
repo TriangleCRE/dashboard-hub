@@ -380,6 +380,7 @@ const LOAN_DATABASE_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const PROPERTY_PORTFOLIO_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const TRIANGLE_LEASE_BOOK_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const DVILLE_LLC_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
+const TRIANGLE_PORTAL_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 
 const SEED_DASHBOARDS = [
   {
@@ -512,6 +513,20 @@ const SEED_DASHBOARDS = [
     sitePassword: "2903",
     sources: DVILLE_LLC_SOURCES,
     instructions: DVILLE_LLC_INSTRUCTIONS,
+    walkthrough: "",
+  },
+  {
+    seedKey: "triangle-portal",
+    name: "Triangle Portal",
+    description: "Tenants, Triangle staff, and maintenance workers each log in and see a personalized, role-specific version of the portal. Use the demo logins listed at the bottom of the login page to explore the prototype as each user type.",
+    url: "https://triangle-tenant-portal.vercel.app/",
+    lastUpdated: "Aug 24, 2026",
+    nextUpdateDue: "As needed",
+    owner: DEFAULT_OWNER,
+    note: "",
+    sitePassword: "Email login (see demo passwords on login page)",
+    sources: "",
+    instructions: TRIANGLE_PORTAL_INSTRUCTIONS,
     walkthrough: "",
   },
 ];
