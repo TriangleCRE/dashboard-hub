@@ -80,10 +80,10 @@ function renderDashboardCard(s){
     ? `<div style="margin-bottom:14px"><span class="pill">Site password: ${esc(s.sitePassword)}</span></div>` : "";
   const noteText = s.note ? `<div class="note-text">${esc(s.note)}</div>` : "";
   const walk = s.walkthrough
-    ? `<a class="btn btn-ghost" href="${esc(s.walkthrough)}" target="_blank" rel="noopener">▶ Walkthrough</a>` : "";
+    ? `<a class="btn btn-ghost" href="${esc(s.walkthrough)}" target="_blank" rel="noopener" draggable="false">▶ Walkthrough</a>` : "";
   const pinnedBadge = s.pinned ? `<span class="pinned-badge">★ Start here</span>` : "";
   return `
-    <div class="card${s.pinned ? " pinned" : ""}">
+    <div class="card${s.pinned ? " pinned" : ""}" data-id="${s.id}">
       <div class="card-head">
         <div class="name"><span class="dot"></span>${esc(s.name)}</div>
         <div class="card-head-actions">
@@ -96,7 +96,7 @@ function renderDashboardCard(s){
       ${pill}
       ${noteText}
       <div class="actions">
-        <a class="btn" href="${esc(s.url)}" target="_blank" rel="noopener">Open dashboard →</a>
+        <a class="btn" href="${esc(s.url)}" target="_blank" rel="noopener" draggable="false">Open dashboard →</a>
         ${walk}
       </div>
     </div>`;

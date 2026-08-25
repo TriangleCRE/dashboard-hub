@@ -37,6 +37,7 @@
         <div class="toolbar-controls">
           <label class="toolbar-label" for="sortSelect">Sort</label>
           <select id="sortSelect" aria-label="Sort dashboards">
+            <option value="custom">Custom order (drag to reorder)</option>
             <option value="name-asc">Name (A–Z)</option>
             <option value="name-desc">Name (Z–A)</option>
             <option value="updated-desc">Last updated (newest)</option>
@@ -50,6 +51,7 @@
           </select>
         </div>
       </div>
+      <p class="toolbar-hint" id="reorderHint" hidden></p>
       <div class="grid" id="grid"></div>
     </main>
 
@@ -180,6 +182,10 @@
       pinned: false,
       lastUpdated: latest.lastUpdated,
       count: children.length,
+      // Kept so a drag-to-reorder save (see persistCustomOrder below) can
+      // expand this one tile back into the real dashboards it stands in
+      // for — the server only ever knows about real dashboard ids.
+      children,
     };
   }
 
@@ -218,6 +224,13 @@
     // every mode already behaves that way).
     let cmp;
     switch (sortSelect.value) {
+      // No comparator at all — Array.prototype.sort is stable, so this
+      // just keeps whatever order `sites` already arrived in (the API's
+      // own sort_order, or wherever a live drag has just moved things to;
+      // see the DRAG TO REORDER section below).
+      case "custom":
+        cmp = () => 0;
+        break;
       case "name-desc":
         cmp = (a, b) => byNameAsc(b, a);
         break;
@@ -237,6 +250,7 @@
   }
 
   function applyFiltersAndRender(){
+    updateReorderHint();
     if (!allSites.length) return; // handled by the "no dashboards yet" message
     const filtered = filterSites(allSites);
     if (!filtered.length) {
@@ -249,7 +263,18 @@
     // property inside it, rather than the tile being all-or-nothing.
     const billingSites = filtered.filter(s => BILLING_TOOL_NAMES.includes(s.name));
     const rest = filtered.filter(s => !BILLING_TOOL_NAMES.includes(s.name));
-    const displaySites = billingSites.length ? [...rest, buildBillingTile(billingSites)] : rest;
+    let displaySites = rest;
+    if (billingSites.length) {
+      const tile = buildBillingTile(billingSites);
+      // Slot the group tile in wherever its first member would've sorted,
+      // rather than always at the end — otherwise Custom order would
+      // always show it last no matter where its dashboards' own
+      // sort_order actually placed them (name/date modes don't care,
+      // since sortSites() below fully re-sorts everything anyway).
+      const firstIndex = filtered.findIndex(s => BILLING_TOOL_NAMES.includes(s.name));
+      const insertAt = filtered.slice(0, firstIndex).filter(s => !BILLING_TOOL_NAMES.includes(s.name)).length;
+      displaySites = [...rest.slice(0, insertAt), tile, ...rest.slice(insertAt)];
+    }
     renderCards(sortSites(displaySites));
   }
 
@@ -287,6 +312,109 @@
         if (site) modal.openEditModal(site);
       });
     });
+
+    wireDragAndDrop(sites);
+  }
+
+  /* =========================================================================
+     DRAG TO REORDER
+     -------------------------------------------------------------------------
+     Native HTML5 drag-and-drop, no library. Only live in "Custom order"
+     mode, and only when the grid is showing every dashboard (search/filter
+     narrow what's visible, which would make "here's the new full order"
+     ambiguous) — see reorderEnabled(). Dragging over another tile swaps it
+     into that slot in the `sites` array immediately and calls renderCards()
+     again, so the grid keeps reflowing live under the pointer; dragend
+     (which still fires on the original card even after a mid-drag
+     re-render has replaced it) is what actually saves the result.
+     ========================================================================= */
+  let dragging = null; // { key, moved }
+
+  function siteKey(site){
+    return site.isBillingGroup ? "billing-tools-group" : site.id;
+  }
+
+  function reorderEnabled(){
+    return sortSelect.value === "custom" && !searchInput.value.trim() && filterSelect.value === "all";
+  }
+
+  const reorderHint = document.getElementById("reorderHint");
+  function updateReorderHint(){
+    if (sortSelect.value !== "custom") { reorderHint.hidden = true; return; }
+    reorderHint.hidden = false;
+    reorderHint.textContent = reorderEnabled()
+      ? "Drag a tile to reorder it."
+      : "Clear the search and set “Show” to “All dashboards” to drag tiles to reorder them.";
+  }
+
+  // Covers the gaps between cards too (no single card's own listeners see
+  // those), so a drop anywhere in the grid never falls through to the
+  // browser's default handling for the dragged text.
+  grid.addEventListener("dragover", e => { if (dragging) e.preventDefault(); });
+  grid.addEventListener("drop", e => { if (dragging) e.preventDefault(); });
+
+  function wireDragAndDrop(sites){
+    const enabled = reorderEnabled();
+    const cards = grid.querySelectorAll(".card");
+    cards.forEach((card, i) => {
+      const site = sites[i];
+      if (!site || !enabled || site.pinned) return; // pinned always sorts first regardless — never draggable
+      card.classList.add("draggable-card");
+      card.draggable = true;
+
+      card.addEventListener("dragstart", e => {
+        dragging = { key: siteKey(site), moved: false };
+        card.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", String(site.id ?? "")); // Firefox won't start a drag without data set.
+      });
+
+      card.addEventListener("dragend", () => {
+        const moved = Boolean(dragging && dragging.moved);
+        dragging = null;
+        if (moved) persistCustomOrder(sites);
+      });
+
+      card.addEventListener("dragenter", () => {
+        if (!dragging || dragging.key === siteKey(site)) return;
+        const from = sites.findIndex(s => siteKey(s) === dragging.key);
+        if (from === -1 || from === i) return;
+        const [moved] = sites.splice(from, 1);
+        sites.splice(i, 0, moved);
+        dragging.moved = true;
+        renderCards(sites);
+      });
+    });
+
+    // A mid-drag renderCards() call above replaces every card node, so the
+    // "being dragged" look has to be reapplied to whichever node now holds
+    // the dragged site rather than surviving on the node it started on.
+    if (dragging) {
+      cards.forEach((card, i) => {
+        if (sites[i] && siteKey(sites[i]) === dragging.key) card.classList.add("dragging");
+      });
+    }
+  }
+
+  async function persistCustomOrder(sites){
+    // The billing-tools tile stands in for 3 real dashboards (see
+    // buildBillingTile) — the server only ever sees real dashboard ids, so
+    // expand it back into them (in their existing relative order) here.
+    // Pinned dashboards are excluded too: undraggable, and the API expects
+    // exactly the non-pinned set.
+    const orderedIds = sites
+      .filter(s => !s.pinned)
+      .flatMap(s => s.isBillingGroup ? s.children.map(c => c.id) : [s.id]);
+    try {
+      await apiRequest(`${API_BASE}/reorder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: orderedIds }),
+      });
+    } catch (err) {
+      console.error("Could not save the new dashboard order:", err);
+      await loadAndRender(); // resync with whatever's actually saved
+    }
   }
 
   async function loadAndRender(){

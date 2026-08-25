@@ -1086,6 +1086,26 @@ async function deleteDashboard(id) {
   return rowCount > 0;
 }
 
+// Persists a full manual re-ordering: `orderedIds` is every non-pinned
+// dashboard's id, in the order they should now sort in (see the "Custom
+// order" mode and drag-to-reorder in public/index.html). Pinned dashboards
+// are never included — they always sort first regardless of sort_order
+// (see listDashboards above), so their own sort_order is left untouched.
+// One statement via UNNEST rather than N round trips, so dragging a tile
+// across a dozen others is still a single write.
+async function reorderDashboards(orderedIds) {
+  await ensureSchema();
+  if (!orderedIds.length) return listDashboards();
+  await query(
+    `UPDATE dashboards AS d
+     SET sort_order = o.position, updated_at = now()
+     FROM unnest($1::bigint[], $2::int[]) AS o(id, position)
+     WHERE d.id = o.id`,
+    [orderedIds, orderedIds.map((_, i) => i)]
+  );
+  return listDashboards();
+}
+
 /* =========================================================================
    UPDATE CHECKLIST
    -------------------------------------------------------------------------
@@ -1182,6 +1202,7 @@ module.exports = {
   createDashboard,
   updateDashboard,
   deleteDashboard,
+  reorderDashboards,
   addChecklistItem,
   updateChecklistItem,
   deleteChecklistItem,

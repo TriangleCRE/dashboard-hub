@@ -71,6 +71,35 @@ function parseDashboardBody(body) {
   return { fields: { name, url, desc, note, sitePassword, walkthrough, lastUpdated, nextUpdateDue, owner, sources, instructions } };
 }
 
+// Validates a reorder request body for POST /api/dashboards/reorder: `ids`
+// must be an array of dashboard ids covering exactly the current set of
+// non-pinned dashboards, each once — no duplicates, nothing missing,
+// nothing foreign. Pinned dashboards are excluded on both ends: they
+// always sort first regardless of sort_order (see listDashboards in
+// src/db.js), so the Hub never lets you drag one and this never expects
+// one in the list. `currentDashboards` is whatever listDashboards() just
+// returned, so this is checked against the live set rather than trusting
+// the client's idea of what dashboards exist. Postgres bigint columns come
+// back from `pg` as strings, and ids arriving from JSON could be either —
+// Number(...) normalizes both before comparing.
+function parseReorderBody(body, currentDashboards) {
+  const rawIds = Array.isArray(body.ids) ? body.ids : null;
+  const ids = rawIds && rawIds.map((id) => Number(id));
+  if (!ids || !ids.every((id) => Number.isInteger(id))) {
+    return { error: "ids must be an array of dashboard ids." };
+  }
+  const expected = currentDashboards.filter((d) => !d.pinned).map((d) => Number(d.id));
+  const gotSet = new Set(ids);
+  const matches =
+    ids.length === expected.length &&
+    gotSet.size === ids.length &&
+    expected.every((id) => gotSet.has(id));
+  if (!matches) {
+    return { error: "ids must be exactly the current dashboards (excluding pinned ones), each once." };
+  }
+  return { ids };
+}
+
 // Validates a new checklist item (label required, due date optional — a
 // checklist can hold "as needed" items with no date at all).
 function parseChecklistItemBody(body) {
@@ -211,6 +240,23 @@ function createApp({ staticDir }) {
     } catch (err) {
       console.error("DELETE /api/dashboards/:id failed:", err);
       res.status(500).json({ error: "Could not remove the dashboard." });
+    }
+  });
+
+  // Drag-to-reorder on the Hub (public/index.html, "Custom order" sort
+  // mode): persists the full new tile order in one request rather than
+  // round-tripping PUT for every dashboard moved. See
+  // dashboards.reorderDashboards and parseReorderBody above.
+  app.post("/api/dashboards/reorder", async (req, res) => {
+    try {
+      const current = await dashboards.listDashboards();
+      const { ids, error } = parseReorderBody(req.body || {}, current);
+      if (error) return res.status(400).json({ error });
+      const updated = await dashboards.reorderDashboards(ids);
+      res.json(updated);
+    } catch (err) {
+      console.error("POST /api/dashboards/reorder failed:", err);
+      res.status(500).json({ error: "Could not save the new order." });
     }
   });
 
