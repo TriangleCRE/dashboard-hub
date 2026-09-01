@@ -381,6 +381,8 @@ const PROPERTY_PORTFOLIO_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const TRIANGLE_LEASE_BOOK_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const DVILLE_LLC_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
 const TRIANGLE_PORTAL_INSTRUCTIONS = SARAH_ONLY_CLAUDE_CODE_INSTRUCTIONS;
+const TRIANGLE_TASK_LIST_INSTRUCTIONS =
+  `Click "+ New Task" in the top right corner. To make larger infrastructure changes to the dashboard, Sarah can make edits through Claude Code.`;
 
 const SEED_DASHBOARDS = [
   {
@@ -527,6 +529,20 @@ const SEED_DASHBOARDS = [
     sitePassword: "Email login (see demo passwords on login page)",
     sources: "",
     instructions: TRIANGLE_PORTAL_INSTRUCTIONS,
+    walkthrough: "",
+  },
+  {
+    seedKey: "triangle-task-list",
+    name: "Triangle Task List",
+    description: "Running to-do list anyone at Triangle can add to and assign.",
+    url: "https://triangle-task-list.vercel.app/",
+    lastUpdated: "Sep 1, 2026",
+    nextUpdateDue: "As needed",
+    owner: DEFAULT_OWNER,
+    note: "",
+    sitePassword: "2903",
+    sources: "",
+    instructions: TRIANGLE_TASK_LIST_INSTRUCTIONS,
     walkthrough: "",
   },
 ];
